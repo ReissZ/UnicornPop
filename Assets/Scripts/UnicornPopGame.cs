@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Batch 1: camera, sky, castle, cannon and a jester. No gameplay yet.
+// Batches 1-2: camera, sky, castle, cannon, jester and a controllable unicorn.
 public sealed class UnicornPopGame : MonoBehaviour
 {
     public const float WalkwayY = -1.6f;
 
     private Camera cam;
+    private Unicorn unicorn;
     private Transform jester;
     private Transform cannonBarrel;
     private readonly List<Transform> clouds = new List<Transform>();
@@ -79,6 +80,11 @@ public sealed class UnicornPopGame : MonoBehaviour
         BuildCastle(world);
         BuildCannon(world);
         BuildJester(world);
+
+        var unicornGo = new GameObject("Unicorn");
+        unicornGo.transform.SetParent(world, false);
+        unicorn = unicornGo.AddComponent<Unicorn>();
+        unicorn.Build(cam);
     }
 
     private static void BuildCastle(Transform world)
