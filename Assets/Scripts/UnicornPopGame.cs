@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Batches 1-2: camera, sky, castle, cannon, jester and a controllable unicorn.
+// Batches 1-3: world, unicorn, and the jester-loaded cannon firing balloons.
 public sealed class UnicornPopGame : MonoBehaviour
 {
     public const float WalkwayY = -1.6f;
@@ -10,6 +10,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     private Unicorn unicorn;
     private Transform jester;
     private Transform cannonBarrel;
+    private Transform cannonMuzzle;
     private readonly List<Transform> clouds = new List<Transform>();
     private float lastAspect;
 
@@ -81,6 +82,10 @@ public sealed class UnicornPopGame : MonoBehaviour
         BuildCannon(world);
         BuildJester(world);
 
+        var cannon = new GameObject("CannonController").AddComponent<Cannon>();
+        cannon.transform.SetParent(world, false);
+        cannon.Build(world, jester, cannonBarrel, cannonMuzzle);
+
         var unicornGo = new GameObject("Unicorn");
         unicornGo.transform.SetParent(world, false);
         unicorn = unicornGo.AddComponent<Unicorn>();
@@ -126,10 +131,23 @@ public sealed class UnicornPopGame : MonoBehaviour
         var pivot = new GameObject("BarrelPivot").transform;
         pivot.SetParent(root, false);
         pivot.localPosition = new Vector2(0, 0.4f);
-        pivot.localRotation = Quaternion.Euler(0, 0, 8f);
+        pivot.localRotation = Quaternion.Euler(0, 0, 50f);
         cannonBarrel = pivot;
         Art.Spr("Barrel", pivot, Art.Square, new Vector2(0, 0.45f), new Vector2(0.42f, 1.0f), new Color(0.25f, 0.27f, 0.33f), 7);
         Art.Spr("Muzzle", pivot, Art.Square, new Vector2(0, 0.98f), new Vector2(0.54f, 0.16f), new Color(0.18f, 0.19f, 0.24f), 8);
+        cannonMuzzle = new GameObject("MuzzleTip").transform;
+        cannonMuzzle.SetParent(pivot, false);
+        cannonMuzzle.localPosition = new Vector2(0, 1.1f);
+
+        // Crate of balloons the jester fetches from.
+        var crate = new Color(0.55f, 0.36f, 0.2f);
+        var balloonTops = new[] { new Color(1f, 0.35f, 0.45f), new Color(0.35f, 0.65f, 1f), new Color(0.45f, 0.9f, 0.5f) };
+        for (var i = 0; i < balloonTops.Length; i++)
+        {
+            Art.Spr("CrateBalloon", world, Art.Circle, new Vector2(Cannon.CrateX - 0.22f + i * 0.22f, WalkwayY + 0.62f), new Vector2(0.3f, 0.3f), balloonTops[i], 4);
+        }
+        Art.Spr("Crate", world, Art.Square, new Vector2(Cannon.CrateX, WalkwayY + 0.25f), new Vector2(0.7f, 0.5f), crate, 5);
+        Art.Spr("CrateBand", world, Art.Square, new Vector2(Cannon.CrateX, WalkwayY + 0.25f), new Vector2(0.7f, 0.08f), new Color(0.4f, 0.25f, 0.14f), 6);
     }
 
     private void BuildJester(Transform world)
@@ -172,9 +190,5 @@ public sealed class UnicornPopGame : MonoBehaviour
             if (p.x > 11f) p.x = -11f;
             c.position = p;
         }
-
-        // Idle jester hop and a slight cannon wobble so the scene feels alive.
-        jester.position = new Vector3(2.5f, WalkwayY + Mathf.Abs(Mathf.Sin(Time.time * 3f)) * 0.12f, 0);
-        cannonBarrel.localRotation = Quaternion.Euler(0, 0, 8f + Mathf.Sin(Time.time * 1.5f) * 2f);
     }
 }
