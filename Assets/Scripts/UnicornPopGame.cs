@@ -28,12 +28,29 @@ public sealed class UnicornPopGame : MonoBehaviour
     private const float HitRadius = 1.3f;
 
     private int score;
+    private int best;
+    private bool newRecord;
     private int hearts = StartHearts;
     private int combo;
     private float comboTimer;
     private bool gameOver;
+    private bool onTitle;
+    private int startFrame;
     private Vector3 prevTip;
     private bool hasPrevTip;
+
+    private const string BestKey = "UnicornPopBest";
+    private static readonly Color[] Fireworks =
+    {
+        new Color(1f, 0.4f, 0.5f), new Color(1f, 0.85f, 0.3f), new Color(0.4f, 0.9f, 0.6f),
+        new Color(0.4f, 0.7f, 1f), new Color(0.8f, 0.5f, 1f),
+    };
+
+    // A restart (R) goes straight back into the game instead of showing the title again.
+    private static bool skipTitle;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics() => skipTitle = false;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
@@ -48,10 +65,12 @@ public sealed class UnicornPopGame : MonoBehaviour
     {
         Application.targetFrameRate = 60;
         Random.InitState(12345);
+        best = PlayerPrefs.GetInt(BestKey, 0);
         BuildEnvironment();
         BuildCamera();
         effects = new GameObject("Effects").AddComponent<Effects>();
         effects.transform.SetParent(transform, false);
+        gameObject.AddComponent<Sfx>();
         heartTex = MakeHeart();
         Balloon.Escaped += OnBalloonEscaped;
 
@@ -71,13 +90,27 @@ public sealed class UnicornPopGame : MonoBehaviour
 
         cannon = new GameObject("CannonController").AddComponent<Cannon>();
         cannon.transform.SetParent(transform, false);
+        cannon.Active = false;
         cannon.Build(world, jester, cannonBarrel, cannonMuzzle, unicorn.transform, CrateX, 9.8f, 5.5f);
+
+        onTitle = !skipTitle;
+        unicorn.Controllable = !onTitle;
+        cannon.Active = !onTitle;
         SnapCamera();
     }
 
     private void OnDestroy()
     {
         Balloon.Escaped -= OnBalloonEscaped;
+    }
+
+    private void StartGame()
+    {
+        onTitle = false;
+        skipTitle = true;
+        cannon.Active = true;
+        startFrame = Time.frameCount;
+        Sfx.Start();
     }
 
     // ---------- Setup ----------
@@ -289,6 +322,21 @@ public sealed class UnicornPopGame : MonoBehaviour
             c.position = p;
         }
 
+        if (onTitle)
+        {
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0))
+            {
+                StartGame();
+            }
+            return;
+        }
+
+        // Hand over control a frame later so the key that started the game doesn't also trigger a jump.
+        if (!unicorn.Controllable && !gameOver && Time.frameCount > startFrame)
+        {
+            unicorn.Controllable = true;
+        }
+
         if (gameOver)
         {
             if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Return))
@@ -345,6 +393,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         effects.Burst(pos, b.Color, b.Golden ? 36 : 20, b.Golden ? 9f : 6f);
         effects.Text(pos + Vector3.up, "+" + points, b.Golden ? Balloon.Gold : Color.white, b.Golden ? 38 : 28);
         if (combo >= 2) effects.Text(pos + Vector3.up * 2.2f, "COMBO x" + combo, new Color(1f, 0.6f, 0.85f), 22);
+        if (b.Golden) Sfx.Golden(); else Sfx.Pop(combo);
         b.Pop();
     }
 
@@ -353,10 +402,37 @@ public sealed class UnicornPopGame : MonoBehaviour
         if (gameOver || b.Golden) return;
         hearts--;
         effects.Text(b.transform.position, "Escaped!", new Color(1f, 0.4f, 0.4f), 26);
-        if (hearts <= 0)
+        if (hearts > 0)
         {
-            gameOver = true;
-            cannon.Active = false;
+            Sfx.Lose();
+            return;
+        }
+
+        gameOver = true;
+        cannon.Active = false;
+        if (score > best)
+        {
+            best = score;
+            newRecord = true;
+            PlayerPrefs.SetInt(BestKey, best);
+            PlayerPrefs.Save();
+            Sfx.Record();
+            StartCoroutine(FireworkShow());
+        }
+        else
+        {
+            Sfx.GameOver();
+        }
+    }
+
+    private System.Collections.IEnumerator FireworkShow()
+    {
+        for (var i = 0; i < 14; i++)
+        {
+            var around = unicorn.transform.position + unicorn.Forward * Random.Range(8f, 16f) + Random.insideUnitSphere * 8f;
+            around.y = Mathf.Max(around.y, 4f) + Random.Range(3f, 9f);
+            effects.Burst(around, Fireworks[i % Fireworks.Length], 40, 11f, 1.2f);
+            yield return new WaitForSeconds(0.18f);
         }
     }
 
@@ -386,6 +462,19 @@ public sealed class UnicornPopGame : MonoBehaviour
 
     private void FollowCamera(float dt)
     {
+        if (onTitle)
+        {
+            // Slow orbit that shows off the unicorn from the front.
+            var c = unicorn.transform.position + Vector3.up * 1.5f;
+            var a = Time.time * 0.35f + 0.6f;
+            var want = c + new Vector3(Mathf.Sin(a), 0.25f, Mathf.Cos(a)) * 6.5f;
+            cam.transform.position = Vector3.Lerp(cam.transform.position, want, 1f - Mathf.Exp(-3f * dt));
+            var look = Quaternion.LookRotation(c - cam.transform.position, Vector3.up);
+            cam.transform.rotation = Quaternion.Slerp(cam.transform.rotation, look, 1f - Mathf.Exp(-6f * dt));
+            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, 50f, 1f - Mathf.Exp(-4f * dt));
+            return;
+        }
+
         var fwd = unicorn.Forward;
         var focus = unicorn.transform.position;
         var distance = unicorn.Dashing ? 8.5f : 7f;
@@ -410,6 +499,12 @@ public sealed class UnicornPopGame : MonoBehaviour
             bigStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
             midStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         }
+        if (onTitle)
+        {
+            DrawTitle(k);
+            return;
+        }
+
         GUI.Label(new Rect(12, 8, 700, 26), "W/S move   A/D turn   Space jump / flap (hold to glide)   Shift dash   Ctrl or C dive", hint);
         DrawBar(12, 40, 160, 12, unicorn.Stamina01, new Color(0.5f, 0.9f, 1f));
         DrawBar(12, 58, 160, 8, unicorn.DashReady01, new Color(1f, 0.85f, 0.3f));
@@ -423,7 +518,7 @@ public sealed class UnicornPopGame : MonoBehaviour
             DrawBar(Screen.width * 0.5f - w * 0.5f, 94 * k, w, 8 * k, comboTimer / ComboWindow, new Color(1f, 0.6f, 0.85f));
         }
 
-        // Hearts, top right.
+        // Hearts, top right, with the best score under them.
         var size = 40 * k;
         for (var i = 0; i < StartHearts; i++)
         {
@@ -431,6 +526,8 @@ public sealed class UnicornPopGame : MonoBehaviour
             GUI.DrawTexture(new Rect(Screen.width - (StartHearts - i) * (size + 6 * k) - 8 * k, 10 * k, size, size), heartTex);
         }
         GUI.color = Color.white;
+        var bestStyle = new GUIStyle(scoreStyle) { alignment = TextAnchor.UpperRight };
+        Shadowed(new Rect(0, 56 * k, Screen.width - 12 * k, 26 * k), "Best " + Mathf.Max(best, score), bestStyle, Mathf.RoundToInt(20 * k), new Color(1f, 0.9f, 0.5f));
 
         if (gameOver)
         {
@@ -438,9 +535,48 @@ public sealed class UnicornPopGame : MonoBehaviour
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
             GUI.color = Color.white;
             var cy = Screen.height * 0.5f;
-            Shadowed(new Rect(0, cy - 110 * k, Screen.width, 80 * k), "Game Over", bigStyle, Mathf.RoundToInt(72 * k), new Color(1f, 0.5f, 0.7f));
-            Shadowed(new Rect(0, cy - 20 * k, Screen.width, 50 * k), "Score " + score, midStyle, Mathf.RoundToInt(40 * k), Color.white);
-            Shadowed(new Rect(0, cy + 50 * k, Screen.width, 40 * k), "Press R to play again", midStyle, Mathf.RoundToInt(26 * k), Color.white);
+            Shadowed(new Rect(0, cy - 120 * k, Screen.width, 80 * k), "Game Over", bigStyle, Mathf.RoundToInt(72 * k), new Color(1f, 0.5f, 0.7f));
+            Shadowed(new Rect(0, cy - 30 * k, Screen.width, 50 * k), "Score " + score, midStyle, Mathf.RoundToInt(40 * k), Color.white);
+            if (newRecord)
+            {
+                var pulse = 1f + Mathf.Sin(Time.time * 6f) * 0.08f;
+                Shadowed(new Rect(0, cy + 22 * k, Screen.width, 40 * k), "New high score!", midStyle, Mathf.RoundToInt(32 * k * pulse), new Color(1f, 0.9f, 0.3f));
+            }
+            else
+            {
+                Shadowed(new Rect(0, cy + 22 * k, Screen.width, 40 * k), "Best " + best, midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.5f));
+            }
+            Shadowed(new Rect(0, cy + 80 * k, Screen.width, 40 * k), "Press R to play again", midStyle, Mathf.RoundToInt(26 * k), Color.white);
+        }
+    }
+
+    private void DrawTitle(float k)
+    {
+        GUI.color = new Color(0, 0, 0, 0.25f);
+        GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+        GUI.color = Color.white;
+
+        var bob = Mathf.Sin(Time.time * 2f) * 6f * k;
+        Shadowed(new Rect(0, 50 * k + bob, Screen.width, 110 * k), "Unicorn Pop", bigStyle, Mathf.RoundToInt(96 * k), new Color(1f, 0.55f, 0.85f));
+        Shadowed(new Rect(0, 150 * k, Screen.width, 40 * k), "Pop the jester's balloons with your horn!", midStyle, Mathf.RoundToInt(26 * k), Color.white);
+
+        var blink = 0.65f + 0.35f * Mathf.Sin(Time.time * 4f);
+        Shadowed(new Rect(0, Screen.height - 210 * k, Screen.width, 50 * k), "Press Space, Enter or click to start", midStyle, Mathf.RoundToInt(34 * k * (0.96f + 0.04f * blink)), new Color(1f, 1f, 1f, blink));
+
+        var lines = new[]
+        {
+            "W / S  fly forward / back        A / D  turn",
+            "Space  jump, then flap (hold to glide)",
+            "Shift  rainbow dash        Ctrl or C  dive",
+            "Golden balloons are worth 5 and never cost a heart. 3 hearts total.",
+        };
+        for (var i = 0; i < lines.Length; i++)
+        {
+            Shadowed(new Rect(0, Screen.height - 150 * k + i * 26 * k, Screen.width, 26 * k), lines[i], midStyle, Mathf.RoundToInt(18 * k), Color.white);
+        }
+        if (best > 0)
+        {
+            Shadowed(new Rect(0, 200 * k, Screen.width, 36 * k), "Best " + best, midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.5f));
         }
     }
 

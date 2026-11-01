@@ -145,6 +145,7 @@ public sealed class Cannon : MonoBehaviour
         Balloon.Spawn(world, origin, vel, color, golden);
         StartCoroutine(Recoil(0.65f, 0.25f));
         StartCoroutine(Smoke());
+        Sfx.Boom();
     }
 
     private IEnumerator Recoil(float minScale, float seconds)

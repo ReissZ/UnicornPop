@@ -47,6 +47,8 @@ public sealed class Unicorn : MonoBehaviour
     private float pitch;
     private float roll;
 
+    // Off while the title or game-over screen is up.
+    public bool Controllable { get; set; } = true;
     public Transform HornTip { get; private set; }
     public Transform HornBase { get; private set; }
     public float Stamina01 => stamina / MaxStamina;
@@ -140,25 +142,34 @@ public sealed class Unicorn : MonoBehaviour
         var grounded = Grounded;
 
         var turn = 0f;
-        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) turn -= 1f;
-        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) turn += 1f;
         var throttle = 0f;
-        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) throttle = 1f;
-        else if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) throttle = -0.4f;
-        var spaceDown = Input.GetKeyDown(KeyCode.Space);
-        var spaceHeld = Input.GetKey(KeyCode.Space);
-        var dive = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
+        var spaceDown = false;
+        var spaceHeld = false;
+        var dive = false;
+        var dashPressed = false;
+        if (Controllable)
+        {
+            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) turn -= 1f;
+            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) turn += 1f;
+            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) throttle = 1f;
+            else if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) throttle = -0.4f;
+            spaceDown = Input.GetKeyDown(KeyCode.Space);
+            spaceHeld = Input.GetKey(KeyCode.Space);
+            dive = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
+            dashPressed = Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift);
+        }
 
         yaw += turn * (grounded ? 130f : 150f) * dt;
         var fwd = Forward;
 
         dashCd -= dt;
         flapCool -= dt;
-        if ((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) && dashCd <= 0f)
+        if (dashPressed && dashCd <= 0f)
         {
             dashT = DashTime;
             dashCd = DashCooldown;
             RainbowBlast(fwd, 60, true);
+            Sfx.Dash();
         }
 
         float targetSpeed;
@@ -183,6 +194,8 @@ public sealed class Unicorn : MonoBehaviour
             if (grounded)
             {
                 vy = JumpSpeed;
+                Sfx.Jump();
+                Emit(transform.position + Vector3.up * 0.1f, gold: false, 6, 2f);
             }
             else
             {
@@ -231,6 +244,7 @@ public sealed class Unicorn : MonoBehaviour
         flapT = 0f;
         flapCool = 0.4f;
         Emit(transform.position + Vector3.up * 0.8f, gold: false, 5, 1.5f);
+        Sfx.Flap();
     }
 
     private void Pose(float turn, float dt)

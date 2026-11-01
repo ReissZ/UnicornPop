@@ -22,7 +22,7 @@ Flaps use stamina (blue bar); the dash cooldown is the yellow bar.
 - [x] Batch 1: 3D world, castle, jester, cannon, flying unicorn with chase camera
 - [x] Batch 2: jester loads the cannon, balloons fly out
 - [x] Batch 3: horn popping, score, combo, golden balloons, hearts
-- [ ] Batch 4: title / game over, high score, sound, particles
+- [x] Batch 4: title screen, saved high score, sound, fireworks
 - [ ] Batch 5: difficulty ramp and polish
 
 All models are built from Unity primitives in code, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).
