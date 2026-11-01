@@ -46,3 +46,4 @@ Dreamland runs on happy wishes. Every wish becomes a balloon, and a balloon is m
 - [x] Title screen cinematic: loop-the-loop flip and landing, shocked-eyebrows close-up, then quick zooms to the grinning king and the cackling jester (starts the game at any time)
 
 All models are built from Unity primitives in code, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).
+- [x] Batch 15: realms (a dream meter fills as you save dreams, then the Kings gate opens; no timers; stars on clear)

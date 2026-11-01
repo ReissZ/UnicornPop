@@ -7,7 +7,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 {
     public const float CastleZ = 62f;
     public const float StartZ = -150f;
-    // The cannon only fires, and the level clock only runs, once the unicorn is this close to the castle.
+    // The cannon only fires, and the dream meter only drives difficulty, once the unicorn is this close to the castle.
     public const float EngageZ = -45f;
     private bool engaged;
     public const float WallTopY = 9f;
@@ -33,10 +33,6 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     private const float BoostPowerSeconds = 8f;
     private const float HitRadius = 1.3f;
 
-    private const float LevelSeconds = 20f;
-    private int level = 1;
-    private float playTime;
-    private float levelBanner;
     private Dreamland dreamland;
     private GameFeel feel;
     private bool wasDashing;
@@ -59,7 +55,6 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     private float nextPowerUp = 10f;
     private Balloon boss;
     private float bossHitCooldown;
-    private int bossLevel;
     private int combo;
     private float comboTimer;
     private bool gameOver;
@@ -474,8 +469,9 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             return;
         }
 
+        if (realmCleared) UpdateRealmCleared();
         engaged = unicorn.transform.position.z > EngageZ;
-        cannon.Active = engaged;
+        cannon.Active = engaged && !realmCleared;
         UpdateDifficulty();
         UpdatePowers();
         if (starPower > 0f)
@@ -496,36 +492,10 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         CheckHornHits();
     }
 
-    // Every LevelSeconds the cannon works faster, golden balloons get more common and balloons rise quicker.
     private void UpdateDifficulty()
     {
-        if (engaged) playTime += Time.deltaTime;
-        var newLevel = 1 + Mathf.FloorToInt(playTime / LevelSeconds);
-        if (newLevel != level)
-        {
-            level = newLevel;
-            levelBanner = 3f;
-            dreamland.SetTheme(level - 1);
-            Music.SetTheme(level - 1);
-            Sfx.Start();
-            effects.Text(unicorn.transform.position + Vector3.up * 4f, "Level " + level + "!", new Color(1f, 0.9f, 0.4f), 40);
-            kingCheer = 1.2f;
-            if (level % 3 == 0 && level > bossLevel && boss == null)
-            {
-                bossLevel = level;
-                SpawnBoss();
-            }
-        }
-        var d = level - 1;
-        cannon.Tempo = Mathf.Min(2.2f, 1f + d * 0.12f) * (slowPower > 0f ? 0.5f : 1f) * (boss != null ? 0.6f : 1f);
-        cannon.GoldenChance = Mathf.Min(0.25f, 0.12f + d * 0.015f);
-        cannon.DoubleChance = Mathf.Clamp01((d - 2) * 0.08f);
-        cannon.RainbowChance = level >= 2 ? 0.05f : 0f;
-        cannon.StarChance = level >= 2 ? 0.04f : 0f;
+        UpdateRealm();
         cannon.HeartChance = hearts < StartHearts ? 0.1f : 0.02f;
-        cannon.StormChance = level >= 3 ? Mathf.Min(0.18f, 0.06f + (level - 3) * 0.02f) : 0f;
-        Balloon.RiseScale = Mathf.Min(1.8f, 1f + d * 0.06f);
-        if (levelBanner > 0f) levelBanner -= Time.deltaTime;
         UpdateKing();
     }
 
@@ -693,7 +663,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         flat = flat.normalized;
         boss = Balloon.Spawn(transform, from, Vector3.zero, BalloonKind.Boss, Balloon.KindColor(BalloonKind.Boss));
         boss.transform.localScale = Vector3.one * Balloon.BossScale;
-        boss.Hp = boss.MaxHp = 5 + level / 3;
+        boss.Hp = boss.MaxHp = realm.BossHp;
         boss.SetDrift(flat * 1.4f + Vector3.up * 0.7f);
         effects.Text(unicorn.transform.position + unicorn.Forward * 6f + Vector3.up * 4f, "BOSS BALLOON!", new Color(1f, 0.5f, 0.85f), 44);
         Sfx.Start();
@@ -737,6 +707,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             PowerUp.Spawn(transform, pos + new Vector3((i - 0.5f) * 5f, 0f, 0f), (PowerKind)Random.Range(0, 3));
         }
         boss = null;
+        bossDefeated = true;
         Music.SetBoss(false);
         DreamSaver.Release(pos, b.Color, true);
         b.Pop();
@@ -988,14 +959,10 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         DrawBar(12, 40, 160, 12, unicorn.Stamina01, new Color(0.5f, 0.9f, 1f));
         DrawBar(12, 58, 160, 8, unicorn.DashReady01, new Color(1f, 0.85f, 0.3f));
 
-        GUI.Label(new Rect(12, 72, 200, 26), "Level " + level, hint);
+        GUI.Label(new Rect(12, 72, 240, 26), realm.Name, hint);
         GUI.Label(new Rect(12, 92, 240, 26), "Dreams saved " + DreamSaver.Saved, hint);
         DrawCompass(k);
-        if (levelBanner > 0f)
-        {
-            Shadowed(new Rect(0, Screen.height * 0.3f, Screen.width, 70 * k), "Level " + level + " - faster!", bigStyle, Mathf.RoundToInt(54 * k), new Color(1f, 0.9f, 0.4f));
-            Shadowed(new Rect(0, Screen.height * 0.3f + 62 * k, Screen.width, 40 * k), dreamland.ThemeName, midStyle, Mathf.RoundToInt(28 * k), Color.white);
-        }
+        DrawWaveHud(k);
 
         // Score and combo, top centre.
         Rounded(new Rect(Screen.width * 0.5f - 110 * k, 6 * k, 220 * k, 58 * k), new Color(0.75f, 0.6f, 0.95f, 0.28f));
@@ -1016,8 +983,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         if (boss != null && !gameOver)
         {
             var bw = 360 * k;
-            Shadowed(new Rect(0, Screen.height - 74 * k, Screen.width, 30 * k), "BOSS BALLOON", scoreStyle, Mathf.RoundToInt(22 * k), new Color(1f, 0.55f, 0.85f));
-            DrawBar(Screen.width * 0.5f - bw * 0.5f, Screen.height - 42 * k, bw, 16 * k, boss.Hp / (float)boss.MaxHp, new Color(1f, 0.45f, 0.75f));
+            Shadowed(new Rect(0, Screen.height - 104 * k, Screen.width, 30 * k), realm.KingName.ToUpper() + "'S BOSS BALLOON", scoreStyle, Mathf.RoundToInt(22 * k), new Color(1f, 0.55f, 0.85f));
+            DrawBar(Screen.width * 0.5f - bw * 0.5f, Screen.height - 72 * k, bw, 16 * k, boss.Hp / (float)boss.MaxHp, new Color(1f, 0.45f, 0.75f));
         }
 
         // Hearts, top right, with the best score under them.
@@ -1031,6 +998,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         var bestStyle = new GUIStyle(scoreStyle) { alignment = TextAnchor.UpperRight };
         Shadowed(new Rect(0, 56 * k, Screen.width - 12 * k, 26 * k), "Best " + Mathf.Max(best, score), bestStyle, Mathf.RoundToInt(20 * k), new Color(1f, 0.9f, 0.5f));
 
+        if (realmCleared) DrawRealmCleared(k);
+
         if (gameOver)
         {
             GUI.color = new Color(0, 0, 0, 0.55f);
@@ -1038,7 +1007,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             GUI.color = Color.white;
             var cy = Screen.height * 0.5f;
             Shadowed(new Rect(0, cy - 120 * k, Screen.width, 80 * k), "Game Over", bigStyle, Mathf.RoundToInt(72 * k), new Color(1f, 0.5f, 0.7f));
-            Shadowed(new Rect(0, cy - 30 * k, Screen.width, 50 * k), "Score " + score + "   Level " + level, midStyle, Mathf.RoundToInt(40 * k), Color.white);
+            Shadowed(new Rect(0, cy - 30 * k, Screen.width, 50 * k), "Score " + score + "   Dreams " + DreamSaver.Saved, midStyle, Mathf.RoundToInt(40 * k), Color.white);
             if (newRecord)
             {
                 var pulse = 1f + Mathf.Sin(Time.time * 6f) * 0.08f;

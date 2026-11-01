@@ -11,6 +11,10 @@ public sealed class Cannon : MonoBehaviour
     public float Interval = 1.0f;
     public bool Active = true;
 
+    // Shots still to be fired. The jester only works while this is above zero.
+    public int Remaining;
+    public bool InCycle { get; private set; }
+
     // Difficulty knobs, driven by the game as the round goes on.
     public float Tempo = 1f;
     public float GoldenChance = 0.12f;
@@ -82,7 +86,8 @@ public sealed class Cannon : MonoBehaviour
     {
         while (true)
         {
-            while (!Active) yield return null;
+            while (!Active || Remaining <= 0) yield return null;
+            InCycle = true;
 
             yield return Walk(crateX);
             var kind = PickKind();
@@ -102,8 +107,9 @@ public sealed class Cannon : MonoBehaviour
             shake = 0f;
 
             Fire(kind, color);
-            if (Random.value < DoubleChance) StartCoroutine(SecondShot());
+            if (Random.value < DoubleChance && Remaining > 0) StartCoroutine(SecondShot());
             yield return Idle(Interval, 6f, 0.3f, Vector3.back);
+            InCycle = false;
         }
     }
 
@@ -111,7 +117,7 @@ public sealed class Cannon : MonoBehaviour
     private IEnumerator SecondShot()
     {
         yield return new WaitForSeconds(0.35f);
-        if (Active) Fire(BalloonKind.Normal, Balloon.RandomColor());
+        if (Active && Remaining > 0) Fire(BalloonKind.Normal, Balloon.RandomColor());
     }
 
     private IEnumerator Idle(float seconds, float hopSpeed, float hopHeight, Vector3 face)
@@ -160,6 +166,7 @@ public sealed class Cannon : MonoBehaviour
 
     private void Fire(BalloonKind kind, Color color)
     {
+        Remaining = Mathf.Max(0, Remaining - 1);
         var origin = muzzle.position;
         var target = player.position + new Vector3(Random.Range(-10f, 10f), 0, Random.Range(-4f, 6f));
         target.y = Random.Range(4f, 18f);
