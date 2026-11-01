@@ -147,6 +147,13 @@ public sealed partial class UnicornPopGame
         GUI.DrawTexture(new Rect(x, y, w * (realmCleared ? 1f : Progress), h), Texture2D.whiteTexture);
         GUI.color = Color.white;
         var label = realmCleared ? realm.Name + " saved!" : gateOpen ? realm.KingName + "'s gate is open!" : "Dreams " + Mathf.Min(DreamSaver.Saved, realm.DreamGoal) + " / " + realm.DreamGoal;
+        if (!realmCleared)
+        {
+            var hint = gateOpen ? "Pop the balloons in the order shown, then beat the King!"
+                : unicorn.transform.position.z < EngageZ ? "Follow the arrow to the castle. Pop any balloon to save its dream!"
+                : "Pop colourful balloons to save dreams. DARK storm balloons cost a heart - steer around them!";
+            Shadowed(new Rect(0, y - 52 * k, Screen.width, 22 * k), hint, scoreStyle, Mathf.RoundToInt(16 * k), new Color(1f, 1f, 1f, 0.9f));
+        }
         Shadowed(new Rect(0, y - 26 * k, Screen.width, 22 * k), label, scoreStyle, Mathf.RoundToInt(17 * k), new Color(1f, 0.9f, 0.7f));
     }
 

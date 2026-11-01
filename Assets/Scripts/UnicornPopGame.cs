@@ -866,9 +866,11 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             LoseHeart(b.transform.position + Vector3.up * 2f, "Ouch!");
             return;
         }
-        // Only ordinary balloons count against you; bonus and storm balloons can float away.
+        // Escaped balloons only cost the combo, never a heart: hearts are lost to storm balloons and a fleeing boss.
         if (gameOver || (b.Kind != BalloonKind.Normal && b.Kind != BalloonKind.Armored)) return;
-        LoseHeart(b.transform.position, "Escaped!");
+        combo = 0;
+        effects.Text(b.transform.position, "Floated away", new Color(1f, 0.85f, 0.9f), 22);
+        kingGrump = 0.5f;
     }
 
     private void LoseHeart(Vector3 pos, string text)
