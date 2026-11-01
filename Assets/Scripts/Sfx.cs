@@ -6,7 +6,7 @@ public sealed class Sfx : MonoBehaviour
     public static Sfx Instance { get; private set; }
 
     private AudioSource source;
-    private AudioClip pop, golden, boom, flap, jump, dash, lose, gameOver, start, record;
+    private AudioClip pop, golden, boom, flap, hoof, jump, dash, lose, gameOver, start, record;
 
     private void Awake()
     {
@@ -16,6 +16,8 @@ public sealed class Sfx : MonoBehaviour
         golden = Clip(0.6f, (t, n) => (Tone(t, 880f) + Tone(t, 1320f) + Tone(t, 1760f) * 0.6f) * 0.3f * Mathf.Exp(-t * 5f));
         boom = Clip(0.4f, (t, n) => (Mathf.Sin(t * Mathf.PI * 2f * (110f - t * 120f)) * 0.8f + n * 0.35f) * Mathf.Exp(-t * 9f));
         flap = Clip(0.18f, (t, n) => n * 0.35f * Mathf.Sin(t / 0.18f * Mathf.PI) * Mathf.Exp(-t * 6f));
+        // Wooden clop: a short low knock plus a tiny bright tick.
+        hoof = Clip(0.09f, (t, n) => (Tone(t, 180f - t * 600f) * 0.7f + Tone(t, 900f) * 0.15f + n * 0.25f) * Mathf.Exp(-t * 55f));
         jump = Clip(0.14f, (t, n) => Mathf.Sin(t * Mathf.PI * 2f * (300f + t * 2500f)) * 0.35f * Mathf.Exp(-t * 12f));
         dash = Clip(0.45f, (t, n) => (n * 0.4f + Mathf.Sin(t * Mathf.PI * 2f * (200f + t * 1400f)) * 0.3f) * Mathf.Exp(-t * 5f));
         lose = Clip(0.5f, (t, n) => Mathf.Sin(t * Mathf.PI * 2f * (330f - t * 420f)) * 0.45f * Mathf.Exp(-t * 4f));
@@ -56,6 +58,7 @@ public sealed class Sfx : MonoBehaviour
     public static void Golden() => Instance?.Play(Instance.golden, 0.7f);
     public static void Boom() => Instance?.Play(Instance.boom, 0.8f);
     public static void Flap() => Instance?.Play(Instance.flap, 0.5f, Random.Range(0.9f, 1.1f));
+    public static void Hoof(float pitch) => Instance?.Play(Instance.hoof, 0.45f, pitch);
     public static void Jump() => Instance?.Play(Instance.jump, 0.5f);
     public static void Dash() => Instance?.Play(Instance.dash, 0.6f);
     public static void Lose() => Instance?.Play(Instance.lose, 0.7f);

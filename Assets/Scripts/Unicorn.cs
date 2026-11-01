@@ -323,7 +323,13 @@ public sealed class Unicorn : MonoBehaviour
         model.localRotation = Quaternion.Euler(pitch, 0, roll);
 
         var planar = new Vector2(hv.x, hv.z).magnitude;
+        var stepBefore = Mathf.FloorToInt(walkCycle / Mathf.PI);
         walkCycle += (airborne ? 3f : 3f + planar * 1.6f) * dt;
+        // A hoofbeat every half cycle while trotting; the pitch alternates and varies a little.
+        if (!airborne && planar > 1.5f && Mathf.FloorToInt(walkCycle / Mathf.PI) != stepBefore)
+        {
+            Sfx.Hoof((stepBefore % 2 == 0 ? 1f : 0.85f) * Random.Range(0.95f, 1.05f));
+        }
         var bob = airborne ? 0f : Mathf.Abs(Mathf.Sin(walkCycle)) * Mathf.Min(planar / GroundSpeed, 1f) * 0.1f;
         model.localPosition = new Vector3(0, bob, 0);
 
