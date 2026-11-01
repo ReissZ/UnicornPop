@@ -51,6 +51,54 @@ public sealed class Unicorn : MonoBehaviour
 
     // Off while the title or game-over screen is up.
     public bool Controllable { get; set; } = true;
+
+    // Title-screen cinematic: the game places the unicorn and this only animates the body.
+    public bool Cinematic;
+    public bool CinTrail;
+    public float Flip;
+    public float Surprise;
+    private readonly Transform[] brows = new Transform[2];
+    private readonly Transform[] eyes = new Transform[2];
+    private Transform mouth;
+    private Vector3 mouthBase;
+    private static readonly Vector3 EyeBase = new Vector3(0.12f, 0.15f, 0.1f);
+    private float cinFlapTimer;
+
+    public void CinPlace(Vector3 pos, float yawDegrees, float dt)
+    {
+        if (dt > 0f)
+        {
+            hv = new Vector3(pos.x - transform.position.x, 0f, pos.z - transform.position.z) / dt;
+            vy = (pos.y - transform.position.y) / dt;
+        }
+        cinTurn = dt > 0f ? Mathf.Clamp(Mathf.DeltaAngle(yaw, yawDegrees) / dt / 60f, -1f, 1f) : 0f;
+        yaw = yawDegrees;
+        transform.position = pos;
+        cinFlapTimer -= dt;
+        if (!Grounded && cinFlapTimer <= 0f && flapT >= 1f)
+        {
+            flapT = 0f;
+            cinFlapTimer = Mathf.Abs(Flip) > 1f ? 0.3f : 0.65f;
+        }
+    }
+    private float cinTurn;
+
+    public void CinBurst() => RainbowBlast(Forward, 50, true);
+
+    public void ResetTo(Vector3 pos, float yawDegrees)
+    {
+        Cinematic = false;
+        CinTrail = false;
+        Flip = 0f;
+        Surprise = 0f;
+        hv = Vector3.zero;
+        vy = 0f;
+        pitch = 0f;
+        roll = 0f;
+        yaw = yawDegrees;
+        transform.position = pos;
+        transform.rotation = Quaternion.Euler(0, yaw, 0);
+    }
     private static readonly float[] FeatherLen = { 1.75f, 1.65f, 1.5f, 1.3f, 1.1f, 0.9f };
     private static readonly float[] FeatherFan = { 0f, 12f, 25f, 38f, 52f, 66f };
 
@@ -101,10 +149,13 @@ public sealed class Unicorn : MonoBehaviour
         Prim.Make(PrimitiveType.Sphere, "Head", model, new Vector3(0, 1.8f, 0.95f), new Vector3(0.44f, 0.44f, 0.55f), white);
         Prim.Make(PrimitiveType.Sphere, "Snout", model, new Vector3(0, 1.7f, 1.25f), new Vector3(0.3f, 0.27f, 0.32f), new Color(1f, 0.92f, 0.96f));
         Prim.Make(PrimitiveType.Sphere, "Nose", model, new Vector3(0, 1.72f, 1.4f), new Vector3(0.12f, 0.09f, 0.08f), pink);
-        Prim.Make(PrimitiveType.Sphere, "Mouth", model, new Vector3(0, 1.6f, 1.34f), new Vector3(0.14f, 0.025f, 0.08f), new Color(0.85f, 0.4f, 0.55f));
+        mouthBase = new Vector3(0.14f, 0.025f, 0.08f);
+        mouth = Prim.Make(PrimitiveType.Sphere, "Mouth", model, new Vector3(0, 1.6f, 1.34f), mouthBase, new Color(0.85f, 0.4f, 0.55f));
         foreach (var sd in new[] { -1f, 1f })
         {
-            Prim.Make(PrimitiveType.Sphere, "Eye", model, new Vector3(0.18f * sd, 1.87f, 1.1f), new Vector3(0.12f, 0.15f, 0.1f), new Color(0.2f, 0.1f, 0.35f));
+            var browColor = new Color(0.42f, 0.28f, 0.6f);
+            eyes[sd > 0 ? 0 : 1] = Prim.Make(PrimitiveType.Sphere, "Eye", model, new Vector3(0.18f * sd, 1.87f, 1.1f), EyeBase, new Color(0.2f, 0.1f, 0.35f));
+            brows[sd > 0 ? 0 : 1] = Prim.Make(PrimitiveType.Cylinder, "Brow", model, new Vector3(0.18f * sd, 1.99f, 1.07f), new Vector3(0.035f, 0.075f, 0.035f), browColor, new Vector3(0, 0, 90f));
             Prim.Make(PrimitiveType.Sphere, "Shine", model, new Vector3(0.205f * sd, 1.915f, 1.15f), Vector3.one * 0.045f, Color.white);
             Prim.Make(PrimitiveType.Sphere, "Shine2", model, new Vector3(0.2f * sd, 1.83f, 1.14f), Vector3.one * 0.02f, Color.white);
             Prim.Make(PrimitiveType.Cylinder, "Lash", model, new Vector3(0.21f * sd, 1.98f, 1.06f), new Vector3(0.015f, 0.05f, 0.015f), new Color(0.2f, 0.1f, 0.35f), new Vector3(0, 0, -35f * sd));
@@ -201,6 +252,13 @@ public sealed class Unicorn : MonoBehaviour
         }
 
         var dt = Time.deltaTime;
+        if (Cinematic)
+        {
+            if (CinTrail) RainbowBlast(Forward, 2, false);
+            Pose(cinTurn, dt);
+            UpdateSparks(dt);
+            return;
+        }
         var grounded = Grounded;
 
         var turn = 0f;
@@ -357,7 +415,7 @@ public sealed class Unicorn : MonoBehaviour
         var k = 1f - Mathf.Exp(-8f * dt);
         pitch = Mathf.Lerp(pitch, airborne ? targetPitch : 0f, k);
         roll = Mathf.Lerp(roll, targetRoll, k);
-        model.localRotation = Quaternion.Euler(pitch, 0, roll);
+        model.localRotation = Quaternion.Euler(pitch + Flip, 0, roll);
 
         var planar = new Vector2(hv.x, hv.z).magnitude;
         var stepBefore = Mathf.FloorToInt(walkCycle / Mathf.PI);
@@ -369,6 +427,13 @@ public sealed class Unicorn : MonoBehaviour
         }
         var bob = airborne ? 0f : Mathf.Abs(Mathf.Sin(walkCycle)) * Mathf.Min(planar / GroundSpeed, 1f) * 0.1f;
         model.localPosition = new Vector3(0, bob, 0);
+        if (Mathf.Abs(Flip) > 0.01f)
+        {
+            // Tumble around the middle of the body instead of the hooves.
+            var pivot = new Vector3(0, 1.1f, 0.2f);
+            model.localPosition += pivot - model.localRotation * pivot;
+        }
+        PoseFace();
 
         for (var i = 0; i < legs.Length; i++)
         {
@@ -397,6 +462,21 @@ public sealed class Unicorn : MonoBehaviour
         }
 
         PoseWings(airborne, dt);
+    }
+
+    // Surprise raises and arches the brows, widens the eyes and opens the mouth into an O.
+    private void PoseFace()
+    {
+        if (brows[0] == null || mouth == null) return;
+        var s = Surprise;
+        for (var i = 0; i < 2; i++)
+        {
+            var sd = i == 0 ? 1f : -1f;
+            brows[i].localPosition = new Vector3(0.18f * sd, 1.99f + s * 0.1f, 1.07f);
+            brows[i].localRotation = Quaternion.Euler(0, 0, 90f - sd * s * 24f);
+            eyes[i].localScale = EyeBase * (1f + s * 0.55f);
+        }
+        mouth.localScale = Vector3.Lerp(mouthBase, new Vector3(0.1f, 0.1f, 0.09f), s);
     }
 
     // Wings fold back along the body on the ground, beat on a flap (feather tips lag the bone) and stay open in a glide.

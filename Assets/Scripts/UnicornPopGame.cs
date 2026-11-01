@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // 3D world: meadow, a castle in the distance with a jester and cannon on its wall, and a chase camera.
-public sealed class UnicornPopGame : MonoBehaviour
+public sealed partial class UnicornPopGame : MonoBehaviour
 {
     public const float CastleZ = 62f;
     public const float WallTopY = 9f;
@@ -122,6 +122,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         unicorn.Controllable = !onTitle;
         cannon.Active = !onTitle;
         GameFeel.Setup(cam, unicorn);
+        BeginTitle();
         SnapCamera();
     }
 
@@ -138,7 +139,9 @@ public sealed class UnicornPopGame : MonoBehaviour
         Balloon.TimeScale = 1f;
         Music.SetDuck(1f);
         Music.SetTheme(0);
+        EndTitle();
         cannon.Active = true;
+        SnapCamera();
         startFrame = Time.frameCount;
         Sfx.Start();
     }
@@ -421,6 +424,8 @@ public sealed class UnicornPopGame : MonoBehaviour
 
         if (onTitle)
         {
+            UpdateTitle(Time.deltaTime);
+            UpdateKing();
             if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0) || Pad.JumpDown || Pad.StartDown)
             {
                 StartGame();
@@ -878,14 +883,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     {
         if (onTitle)
         {
-            // Slow orbit that shows off the unicorn from the front.
-            var c = unicorn.transform.position + Vector3.up * 1.5f;
-            var a = Time.time * 0.35f + 0.6f;
-            var want = c + new Vector3(Mathf.Sin(a), 0.25f, Mathf.Cos(a)) * 6.5f;
-            cam.transform.position = Vector3.Lerp(cam.transform.position, want, 1f - Mathf.Exp(-3f * dt));
-            var look = Quaternion.LookRotation(c - cam.transform.position, Vector3.up);
-            cam.transform.rotation = Quaternion.Slerp(cam.transform.rotation, look, 1f - Mathf.Exp(-6f * dt));
-            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, 50f, 1f - Mathf.Exp(-4f * dt));
+            TitleCamera(dt);
             return;
         }
 
