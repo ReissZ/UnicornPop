@@ -110,6 +110,9 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         BuildCannonAndJester(world);
         dreamland = new GameObject("Dreamland").AddComponent<Dreamland>();
         dreamland.Build(world, cam);
+        dreamland.SnapTheme(realm.Sky[0]);
+        Music.SetTheme(realm.Sky[0]);
+        BuildRealmScenery(world);
 
         unicorn = new GameObject("Unicorn").AddComponent<Unicorn>();
         unicorn.transform.SetParent(transform, false);
@@ -146,7 +149,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         Balloon.RiseScale = 1f;
         Balloon.TimeScale = 1f;
         Music.SetDuck(1f);
-        Music.SetTheme(0);
+        Music.SetTheme(realm.Sky[0]);
         EndTitle();
         cannon.Active = true;
         SnapCamera();
@@ -195,9 +198,9 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
     private void BuildGround(Transform world)
     {
-        Prim.Make(PrimitiveType.Cube, "Ground", world, new Vector3(0, -0.5f, 30f), new Vector3(600f, 1f, 600f), new Color(0.45f, 0.78f, 0.4f));
+        Prim.Make(PrimitiveType.Cube, "Ground", world, new Vector3(0, -0.5f, 30f), new Vector3(600f, 1f, 600f), realm.Ground);
 
-        var hillColors = new[] { new Color(0.4f, 0.72f, 0.4f), new Color(0.36f, 0.66f, 0.45f) };
+        var hillColors = new[] { realm.HillA, realm.HillB };
         for (var i = 0; i < 14; i++)
         {
             var side = i % 2 == 0 ? -1f : 1f;
@@ -207,7 +210,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             Prim.Make(PrimitiveType.Sphere, "Hill", world, new Vector3(x, -r * 0.55f, z), new Vector3(r * 2f, r * 1.2f, r * 2f), hillColors[i % 2]);
         }
 
-        for (var i = 0; i < 200; i++)
+        var treeSet = realm.Trees ?? TreePalettes;
+        for (var i = 0; i < realm.TreeCount; i++)
         {
             var x = Random.Range(-88f, 88f);
             var z = Random.Range(-170f, 52f);
@@ -215,9 +219,9 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             var pos = new Vector3(x, 0, z);
             var yaw = Random.Range(0f, 360f);
             var scale = Random.Range(0.85f, 1.5f);
-            var palette = TreePalettes[Random.Range(0, TreePalettes.Length)];
+            var palette = treeSet[Random.Range(0, treeSet.Length)];
             if (Dreamland.InPond(x, z)) continue;
-            if (i % 3 == 0) BuildPine(world, pos, scale, palette);
+            if (i % realm.PineEvery == 0) BuildPine(world, pos, scale, palette);
             else BuildOak(world, pos, scale, yaw, palette);
         }
     }
@@ -308,9 +312,9 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     {
         var castle = new GameObject("Castle").transform;
         castle.SetParent(world, false);
-        var stone = new Color(0.82f, 0.78f, 0.9f);
-        var dark = new Color(0.62f, 0.58f, 0.74f);
-        var roof = new Color(0.9f, 0.35f, 0.6f);
+        var stone = realm.Stone;
+        var dark = realm.StoneDark;
+        var roof = realm.Roof;
         var z = CastleZ;
 
         // A faint light pillar so the castle can be seen from across the realm.
@@ -447,6 +451,14 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         {
             UpdateTitle(Time.deltaTime);
             UpdateKing();
+            var pick = (Input.GetKeyDown(KeyCode.RightArrow) ? 1 : 0) - (Input.GetKeyDown(KeyCode.LeftArrow) ? 1 : 0);
+            if (pick != 0 && Realm.Unlocked > 1)
+            {
+                Realm.Select((Realm.Index + pick + Realm.Unlocked) % Realm.Unlocked);
+                skipTitle = false;
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                return;
+            }
             if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0) || Pad.JumpDown || Pad.StartDown)
             {
                 StartGame();
@@ -1079,6 +1091,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         Shadowed(new Rect(0, 50 * k + bob, Screen.width, 110 * k), "Unicorn Pop", bigStyle, Mathf.RoundToInt(96 * k), new Color(1f, 0.55f, 0.85f));
         Shadowed(new Rect(0, 150 * k, Screen.width, 40 * k), "Pop the jester's balloons with your horn!", midStyle, Mathf.RoundToInt(26 * k), Color.white);
 
+        Shadowed(new Rect(0, 190 * k, Screen.width, 36 * k), realm.Name + (Realm.Unlocked > 1 ? "   (Left / Right to choose a realm)" : ""), midStyle, Mathf.RoundToInt(26 * k), new Color(1f, 0.9f, 0.6f));
         var blink = 0.65f + 0.35f * Mathf.Sin(Time.time * 4f);
         Shadowed(new Rect(0, Screen.height - 210 * k, Screen.width, 50 * k), "Press Space, Enter or click to start", midStyle, Mathf.RoundToInt(34 * k * (0.96f + 0.04f * blink)), new Color(1f, 1f, 1f, blink));
 

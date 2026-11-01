@@ -5,7 +5,7 @@ public sealed partial class UnicornPopGame
 {
     private const string StarsKey = "UnicornPopStars_";
 
-    private Realm realm = Realm.Meadow;
+    private readonly Realm realm = Realm.Current;
     private bool gateOpen;
     private bool bossDefeated;
     private bool realmCleared;
@@ -34,21 +34,22 @@ public sealed partial class UnicornPopGame
 
         var p = Progress;
         cannon.Remaining = engaged ? 999 : 0;
-        cannon.Tempo = (0.8f + 0.9f * p) * (slowPower > 0f ? 0.5f : 1f) * (boss != null ? 0.6f : 1f);
+        cannon.Tempo = realm.TempoScale * (0.8f + 0.9f * p) * (slowPower > 0f ? 0.5f : 1f) * (boss != null ? 0.6f : 1f);
         cannon.GoldenChance = 0.1f + 0.05f * p;
         cannon.DoubleChance = Mathf.Clamp01((p - 0.35f) * 0.5f);
         cannon.RainbowChance = p > 0.15f ? 0.05f : 0f;
         cannon.StarChance = p > 0.25f ? 0.04f : 0f;
         cannon.StormChance = p > 0.45f ? 0.06f + 0.08f * p : 0f;
-        cannon.SpeedyChance = p > 0.1f ? 0.05f + 0.05f * p : 0f;
-        cannon.SplitterChance = p > 0.25f ? 0.06f : 0f;
-        cannon.ArmoredChance = p > 0.35f ? 0.05f + 0.06f * p : 0f;
+        cannon.SpeedyChance = p > 0.1f ? (0.05f + 0.05f * p) * realm.SpeedyMix : 0f;
+        cannon.SplitterChance = p > 0.25f ? 0.06f * realm.SplitterMix : 0f;
+        cannon.ArmoredChance = p > 0.35f ? (0.05f + 0.06f * p) * realm.ArmoredMix : 0f;
         Balloon.RiseScale = 1f + 0.3f * p;
 
-        var theme = p < 0.3f ? 0 : p < 0.6f ? 1 : p < 0.85f ? 2 : 4;
-        if (theme != lastMilestone)
+        var stage = p < 0.3f ? 0 : p < 0.6f ? 1 : p < 0.85f ? 2 : 3;
+        if (stage != lastMilestone)
         {
-            lastMilestone = theme;
+            lastMilestone = stage;
+            var theme = realm.Sky[stage];
             dreamland.SetTheme(theme);
             Music.SetTheme(theme);
             if (DreamSaver.Saved > 0) Banner(dreamland.ThemeName, "The dream light grows...", new Color(1f, 0.9f, 0.4f), 2.5f);
@@ -84,6 +85,7 @@ public sealed partial class UnicornPopGame
         cannon.Remaining = 0;
         stars = hearts >= StartHearts ? 3 : hearts == 2 ? 2 : 1;
         Upgrades.Bank(DreamSaver.Saved + stars * 10);
+        Realm.UnlockNext();
         var key = StarsKey + realm.Name;
         if (stars > PlayerPrefs.GetInt(key, 0))
         {
@@ -111,7 +113,9 @@ public sealed partial class UnicornPopGame
     private void UpdateRealmCleared()
     {
         ShopInput();
-        if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Return) || Pad.StartDown)
+        var next = Input.GetKeyDown(KeyCode.Return) || Pad.StartDown;
+        if (next && Realm.HasNext) Realm.Select(Realm.Index + 1);
+        if (Input.GetKeyDown(KeyCode.R) || next)
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
         }
@@ -191,6 +195,6 @@ public sealed partial class UnicornPopGame
         Shadowed(new Rect(0, cy - 14 * k, Screen.width, 44 * k), "Score " + score + "   Dreams saved " + DreamSaver.Saved + "  (+" + stars * 10 + " star bonus)", midStyle, Mathf.RoundToInt(32 * k), Color.white);
         if (newRecord) Shadowed(new Rect(0, cy + 40 * k, Screen.width, 40 * k), "New high score!", midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.3f));
         DrawShop(k, cy + 130 * k);
-        Shadowed(new Rect(0, Screen.height - 40 * k, Screen.width, 30 * k), "More realms are coming...   Press R to play again", midStyle, Mathf.RoundToInt(22 * k), Color.white);
+        Shadowed(new Rect(0, Screen.height - 40 * k, Screen.width, 30 * k), (Realm.HasNext ? "Press Enter for " + Realm.All[Realm.Index + 1].Name + "   -   R to replay" : "The Herdlight glows brighter...   Press R to play again"), midStyle, Mathf.RoundToInt(22 * k), Color.white);
     }
 }

@@ -82,6 +82,46 @@ public sealed partial class Dreamland
             Light = C(0.65f, 0.85f, 1f), LightIntensity = 0.6f, LightPitch = 58f,
             AmbSky = C(0.25f, 0.45f, 0.6f), AmbEquator = C(0.3f, 0.4f, 0.6f), AmbGround = C(0.2f, 0.3f, 0.4f),
         },
+        new Theme
+        {
+            Name = "Mossy Glade",
+            Horizon = C(0.7f, 0.9f, 0.78f), Low = C(0.68f, 0.9f, 0.76f), Mid = C(0.48f, 0.78f, 0.74f), Top = C(0.3f, 0.58f, 0.68f),
+            SunTint = C(0.95f, 1f, 0.8f), Glow = 1f, SunPitch = 4f, Stars = 0f, Candy = 0f, Aurora = 0f, Rainbow = 0.6f,
+            Light = C(0.92f, 1f, 0.8f), LightIntensity = 1.05f, LightPitch = 48f,
+            AmbSky = C(0.5f, 0.75f, 0.7f), AmbEquator = C(0.6f, 0.8f, 0.65f), AmbGround = C(0.3f, 0.5f, 0.35f),
+        },
+        new Theme
+        {
+            Name = "Golden Canopy",
+            Horizon = C(1f, 0.85f, 0.5f), Low = C(0.95f, 0.8f, 0.45f), Mid = C(0.7f, 0.72f, 0.5f), Top = C(0.3f, 0.5f, 0.5f),
+            SunTint = C(1f, 0.85f, 0.4f), Glow = 1.4f, SunPitch = 14f, Stars = 0.1f, Candy = 0f, Aurora = 0f, Rainbow = 0.4f,
+            Light = C(1f, 0.85f, 0.5f), LightIntensity = 1.0f, LightPitch = 22f,
+            AmbSky = C(0.55f, 0.6f, 0.45f), AmbEquator = C(0.9f, 0.75f, 0.45f), AmbGround = C(0.35f, 0.4f, 0.25f),
+        },
+        new Theme
+        {
+            Name = "Firefly Night",
+            Horizon = C(0.2f, 0.34f, 0.4f), Low = C(0.1f, 0.24f, 0.34f), Mid = C(0.07f, 0.14f, 0.26f), Top = C(0.03f, 0.05f, 0.14f),
+            SunTint = C(0.8f, 1f, 0.9f), Glow = 0.3f, SunPitch = -8f, Stars = 1f, Candy = 0f, Aurora = 0.4f, Rainbow = 0.05f,
+            Light = C(0.6f, 0.9f, 0.85f), LightIntensity = 0.55f, LightPitch = 56f,
+            AmbSky = C(0.2f, 0.4f, 0.45f), AmbEquator = C(0.25f, 0.4f, 0.45f), AmbGround = C(0.12f, 0.25f, 0.22f),
+        },
+        new Theme
+        {
+            Name = "Crystal Dawn",
+            Horizon = C(0.85f, 0.88f, 1f), Low = C(0.8f, 0.82f, 1f), Mid = C(0.7f, 0.85f, 1f), Top = C(0.55f, 0.7f, 0.98f),
+            SunTint = C(0.9f, 0.95f, 1f), Glow = 1.1f, SunPitch = 8f, Stars = 0.15f, Candy = 0f, Aurora = 0f, Rainbow = 1f,
+            Light = C(0.92f, 0.95f, 1f), LightIntensity = 1.15f, LightPitch = 44f,
+            AmbSky = C(0.7f, 0.78f, 1f), AmbEquator = C(0.85f, 0.85f, 1f), AmbGround = C(0.6f, 0.6f, 0.8f),
+        },
+        new Theme
+        {
+            Name = "Prism Noon",
+            Horizon = C(0.9f, 0.97f, 1f), Low = C(0.85f, 0.95f, 1f), Mid = C(0.6f, 0.85f, 1f), Top = C(0.4f, 0.7f, 1f),
+            SunTint = Color.white, Glow = 1.3f, SunPitch = 0f, Stars = 0f, Candy = 0f, Aurora = 0f, Rainbow = 1f,
+            Light = C(1f, 1f, 1f), LightIntensity = 1.25f, LightPitch = 58f,
+            AmbSky = C(0.65f, 0.8f, 1f), AmbEquator = C(0.85f, 0.9f, 1f), AmbGround = C(0.6f, 0.65f, 0.85f),
+        },
     };
 
     private const float ThemeBlendSeconds = 3f;
@@ -103,6 +143,13 @@ public sealed partial class Dreamland
     private float blend = 1f;
 
     public string ThemeName => to.Name;
+
+    public void SnapTheme(int index)
+    {
+        var t = Themes[((index % Themes.Length) + Themes.Length) % Themes.Length];
+        from = to = current = t;
+        blend = 1f;
+    }
 
     public void SetTheme(int index)
     {

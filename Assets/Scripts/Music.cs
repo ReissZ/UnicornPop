@@ -13,8 +13,8 @@ public sealed class Music : MonoBehaviour
         new[] { 0, 4, 7, 11 }, new[] { 9, 0, 4, 7 }, new[] { 5, 9, 0, 4 }, new[] { 7, 11, 2, 5 },
     };
     private static readonly int[] Scale = { 0, 2, 4, 7, 9 };
-    private static readonly float[] ThemeRoot = { 60f, 57f, 55f, 62f, 53f };
-    private static readonly float[] ThemeBpm = { 84f, 72f, 62f, 92f, 58f };
+    private static readonly float[] ThemeRoot = { 60f, 57f, 55f, 62f, 53f, 59f, 57f, 52f, 64f, 62f };
+    private static readonly float[] ThemeBpm = { 84f, 72f, 62f, 92f, 58f, 78f, 70f, 58f, 88f, 80f };
 
     private static Music instance;
 

@@ -23,7 +23,7 @@ public sealed partial class UnicornPopGame
     private void StartPuzzle()
     {
         puzzleActive = true;
-        Banner("JINGLES' LOCK!", "Pop the three balloons in the order shown", new Color(1f, 0.85f, 0.3f), 4f);
+        Banner(realm.JesterName.ToUpper() + "'S LOCK!", "Pop the three balloons in the order shown", new Color(1f, 0.85f, 0.3f), 4f);
         Sfx.Start();
         SpawnLock();
     }
@@ -163,7 +163,7 @@ public sealed partial class UnicornPopGame
     private void DrawPuzzleHud(float k)
     {
         if (!puzzleActive) return;
-        Shadowed(new Rect(0, Screen.height * 0.16f, Screen.width, 30 * k), "Jingles' Lock - pop in this order", scoreStyle, Mathf.RoundToInt(22 * k), new Color(1f, 0.9f, 0.5f));
+        Shadowed(new Rect(0, Screen.height * 0.16f, Screen.width, 30 * k), realm.JesterName + "'s Lock - pop in this order", scoreStyle, Mathf.RoundToInt(22 * k), new Color(1f, 0.9f, 0.5f));
         var s = 44 * k;
         var x0 = Screen.width * 0.5f - 1.5f * s - s * 0.25f;
         for (var i = 0; i < 3; i++)
