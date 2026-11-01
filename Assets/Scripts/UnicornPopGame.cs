@@ -92,6 +92,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         unicorn = new GameObject("Unicorn").AddComponent<Unicorn>();
         unicorn.transform.SetParent(transform, false);
         unicorn.Build(new Vector3(0, 0, -5f), 0f);
+        new GameObject("LivingWorld").AddComponent<LivingWorld>().Build(world, unicorn.transform, CastleZ);
 
         // Scenery is seeded for a stable look; gameplay randomness is not.
         Random.InitState(System.Environment.TickCount);
@@ -295,7 +296,6 @@ public sealed class UnicornPopGame : MonoBehaviour
         Prim.Cone("KeepRoof", castle, new Vector3(0, 28f, z + 4f), new Vector3(10f, 12f, 10f), roof);
         Prim.Make(PrimitiveType.Cube, "Gate", castle, new Vector3(0, 3f, z - 5.6f), new Vector3(6f, 6f, 0.4f), new Color(0.42f, 0.28f, 0.34f));
         Prim.Make(PrimitiveType.Cylinder, "GateArch", castle, new Vector3(0, 6f, z - 5.6f), new Vector3(6f, 0.2f, 6f), new Color(0.42f, 0.28f, 0.34f), new Vector3(90, 0, 0));
-        Prim.Make(PrimitiveType.Cube, "Bridge", castle, new Vector3(0, 0.1f, z - 9f), new Vector3(6f, 0.2f, 7f), new Color(0.5f, 0.33f, 0.2f));
 
         foreach (var sx in new[] { -20f, 20f })
         {
