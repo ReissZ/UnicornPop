@@ -175,17 +175,69 @@ public sealed class UnicornPopGame : MonoBehaviour
             Prim.Make(PrimitiveType.Sphere, "Hill", world, new Vector3(x, -r * 0.55f, z), new Vector3(r * 2f, r * 1.2f, r * 2f), hillColors[i % 2]);
         }
 
-        var trunk = new Color(0.5f, 0.33f, 0.2f);
-        var leaves = new[] { new Color(0.28f, 0.62f, 0.3f), new Color(0.35f, 0.7f, 0.35f), new Color(0.95f, 0.6f, 0.75f) };
         for (var i = 0; i < 70; i++)
         {
             var x = Random.Range(-50f, 50f);
             var z = Random.Range(-28f, 52f);
             if (Mathf.Abs(x) < 5f && z > -10f) continue;
-            var h = Random.Range(2.5f, 4.5f);
-            Prim.Make(PrimitiveType.Cylinder, "Trunk", world, new Vector3(x, h * 0.5f, z), new Vector3(0.5f, h * 0.5f, 0.5f), trunk);
-            var crown = Prim.Make(PrimitiveType.Sphere, "Crown", world, new Vector3(x, h + 0.8f, z), Vector3.one * Random.Range(2.4f, 3.6f), leaves[Random.Range(0, leaves.Length)]);
-            crown.localScale = new Vector3(crown.localScale.x, crown.localScale.y * 1.15f, crown.localScale.z);
+            var pos = new Vector3(x, 0, z);
+            var yaw = Random.Range(0f, 360f);
+            var scale = Random.Range(0.85f, 1.5f);
+            if (i % 3 == 0) BuildPine(world, pos, scale);
+            else BuildOak(world, pos, scale, yaw, i % 11 == 0);
+        }
+    }
+
+    private static readonly Color Bark = new Color(0.42f, 0.28f, 0.17f);
+
+    // Stacked cones that get narrower toward the top, on a thin trunk.
+    private static void BuildPine(Transform world, Vector3 pos, float scale)
+    {
+        var tree = new GameObject("Pine").transform;
+        tree.SetParent(world, false);
+        tree.position = pos;
+        tree.localScale = Vector3.one * scale;
+
+        Prim.Make(PrimitiveType.Cylinder, "Trunk", tree, new Vector3(0, 0.9f, 0), new Vector3(0.45f, 0.9f, 0.45f), Bark);
+        var greens = new[] { new Color(0.16f, 0.45f, 0.28f), new Color(0.2f, 0.52f, 0.3f), new Color(0.25f, 0.58f, 0.33f), new Color(0.3f, 0.64f, 0.36f) };
+        for (var t = 0; t < 4; t++)
+        {
+            var w = 3.6f - t * 0.8f;
+            var h = 2.1f - t * 0.15f;
+            Prim.Cone("Tier", tree, new Vector3(0, 1.7f + t * 1.15f + h * 0.5f, 0), new Vector3(w, h, w), greens[t]);
+        }
+    }
+
+    // Flared trunk, a couple of branches and a canopy made of several overlapping blobs.
+    private static void BuildOak(Transform world, Vector3 pos, float scale, float yaw, bool blossom)
+    {
+        var tree = new GameObject(blossom ? "Blossom" : "Oak").transform;
+        tree.SetParent(world, false);
+        tree.position = pos;
+        tree.rotation = Quaternion.Euler(0, yaw, 0);
+        tree.localScale = Vector3.one * scale;
+
+        Prim.Make(PrimitiveType.Cylinder, "Trunk", tree, new Vector3(0, 1.5f, 0), new Vector3(0.7f, 1.5f, 0.7f), Bark);
+        Prim.Cone("Flare", tree, new Vector3(0, 0.45f, 0), new Vector3(1.5f, 0.9f, 1.5f), Bark);
+        Prim.Make(PrimitiveType.Cylinder, "BranchL", tree, new Vector3(-0.6f, 2.8f, 0), new Vector3(0.28f, 0.8f, 0.28f), Bark, new Vector3(0, 0, 40));
+        Prim.Make(PrimitiveType.Cylinder, "BranchR", tree, new Vector3(0.55f, 3.0f, 0.1f), new Vector3(0.25f, 0.7f, 0.25f), Bark, new Vector3(0, 0, -35));
+
+        var baseGreen = blossom ? new Color(0.98f, 0.7f, 0.82f) : new Color(0.3f, 0.62f, 0.3f);
+        var light = blossom ? new Color(1f, 0.82f, 0.9f) : new Color(0.4f, 0.74f, 0.36f);
+        var blobs = new[]
+        {
+            new Vector4(0f, 4.1f, 0f, 3.2f),
+            new Vector4(-1.3f, 3.7f, 0.5f, 2.3f),
+            new Vector4(1.4f, 3.8f, -0.4f, 2.4f),
+            new Vector4(0.2f, 3.6f, 1.4f, 2.1f),
+            new Vector4(-0.3f, 3.7f, -1.4f, 2.2f),
+            new Vector4(0.3f, 5.1f, 0.2f, 2.2f),
+        };
+        for (var b = 0; b < blobs.Length; b++)
+        {
+            var v = blobs[b];
+            var color = b >= 3 ? light : baseGreen;
+            Prim.Make(PrimitiveType.Sphere, "Leaves", tree, new Vector3(v.x, v.y, v.z), new Vector3(v.w, v.w * 0.8f, v.w), color);
         }
     }
 
