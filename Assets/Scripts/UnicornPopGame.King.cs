@@ -53,7 +53,7 @@ public sealed partial class UnicornPopGame
         }
         for (var i = 0; i < 3; i++)
         {
-            var pos = new Vector3(-8f + i * 8f, Random.Range(6f, 10f), CastleZ - 20f);
+            var pos = new Vector3(-8f + i * 8f, Random.Range(6f, 10f), CastleZ - 24f);
             var b = Balloon.SpawnAmbient(transform, pos, BalloonKind.Normal, lockColors[i]);
             b.PuzzleId = i;
             lockBalloons.Add(b);
@@ -131,6 +131,15 @@ public sealed partial class UnicornPopGame
                 GameFeel.Shake(0.6f);
                 kingGrump = 1.5f;
             }
+        }
+
+        // Keep the boss inside the area the unicorn can fly, so it never hides in or behind the castle.
+        var bp = boss.transform.position;
+        var clamped = new Vector3(Mathf.Clamp(bp.x, -75f, 75f), Mathf.Clamp(bp.y, 4f, 30f), Mathf.Min(bp.z, CastleZ - 24f));
+        if (clamped != bp)
+        {
+            boss.transform.position = clamped;
+            boss.Kick(new Vector3(-Mathf.Sign(bp.x) * (clamped.x != bp.x ? 4f : 0f), 0f, bp.z > clamped.z ? -4f : 0f));
         }
 
         var toPlayer = unicorn.transform.position - boss.transform.position;

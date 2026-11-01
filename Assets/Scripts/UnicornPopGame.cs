@@ -683,7 +683,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
     private void SpawnBoss()
     {
-        var from = new Vector3(Random.Range(-8f, 8f), 12f, CastleZ - 14f);
+        var from = new Vector3(Random.Range(-8f, 8f), 12f, CastleZ - 28f);
         var flat = unicorn.transform.position - from;
         flat.y = 0;
         flat = flat.normalized;
