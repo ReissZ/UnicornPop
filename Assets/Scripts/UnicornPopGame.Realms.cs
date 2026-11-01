@@ -133,4 +133,35 @@ public sealed partial class UnicornPopGame
             if (i % 5 == 0) Prim.Make(PrimitiveType.Sphere, "Wisp", world, new Vector3(x, h + 1.5f, z), Vector3.one * 0.6f, new Color(0.8f, 0.7f, 1f));
         }
     }
+
+    // A path of realm nodes on the title screen: unlocked realms show their stars, the next ones stay hidden.
+    private void DrawRealmMap(float k)
+    {
+        var all = Realm.All;
+        var unlocked = Realm.Unlocked;
+        var node = 34f * k;
+        var gap = 70f * k;
+        var x0 = Screen.width * 0.5f - (all.Length - 1) * gap * 0.5f;
+        var y = 214f * k;
+        for (var i = 0; i < all.Length; i++)
+        {
+            var cx = x0 + i * gap;
+            var open = i < unlocked;
+            if (i > 0)
+            {
+                GUI.color = open ? new Color(1f, 1f, 1f, 0.7f) : new Color(1f, 1f, 1f, 0.2f);
+                GUI.DrawTexture(new Rect(cx - gap + node * 0.5f, y - 2f * k, gap - node, 4f * k), Texture2D.whiteTexture);
+            }
+            var c = open ? all[i].Accent : new Color(0.3f, 0.3f, 0.35f);
+            var size = i == Realm.Index ? node * 1.3f : node;
+            GUI.color = i == Realm.Index ? Color.white : new Color(0f, 0f, 0f, 0f);
+            GUI.DrawTexture(new Rect(cx - size * 0.5f - 3f * k, y - size * 0.5f - 3f * k, size + 6f * k, size + 6f * k), heartTex);
+            GUI.color = c;
+            GUI.DrawTexture(new Rect(cx - size * 0.5f, y - size * 0.5f, size, size), heartTex);
+            GUI.color = Color.white;
+            if (open) Shadowed(new Rect(cx - gap * 0.5f, y + node * 0.7f, gap, 20f * k), new string('*', all[i].Stars) + (all[i].Stars == 0 ? "-" : ""), midStyle, Mathf.RoundToInt(18 * k), new Color(1f, 0.9f, 0.3f));
+        }
+        var line = realm.Name + (unlocked > 1 ? "   (Left / Right to choose)" : "");
+        Shadowed(new Rect(0, y + node * 1.6f, Screen.width, 32 * k), line, midStyle, Mathf.RoundToInt(24 * k), new Color(1f, 0.9f, 0.6f));
+    }
 }

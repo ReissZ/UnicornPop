@@ -3,7 +3,7 @@ using UnityEngine;
 // Wave engine: each realm is a scripted run of waves that ends with the King's boss balloon.
 public sealed partial class UnicornPopGame
 {
-    private const string StarsKey = "UnicornPopStars_";
+    private const string StarsKey = Realm.StarsKey;
 
     private readonly Realm realm = Realm.Current;
     private bool gateOpen;

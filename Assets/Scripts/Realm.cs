@@ -15,6 +15,8 @@ public sealed class Realm
     public float SpeedyMix = 1f, SplitterMix = 1f, ArmoredMix = 1f;
 
     // Look of the land and castle.
+    public Color Robe = new Color(0.75f, 0.12f, 0.2f), Skin = new Color(1f, 0.85f, 0.72f), Fur = new Color(0.97f, 0.95f, 0.92f);
+    public Color Accent = new Color(1f, 0.82f, 0.25f);
     public Color Ground, HillA, HillB, Stone, StoneDark, Roof;
     public Color[][] Trees;
     public int TreeCount = 200;
@@ -28,7 +30,7 @@ public sealed class Realm
     {
         new Realm
         {
-            Name = "Sunny Meadow", KingName = "King Bartholomew", JesterName = "Jingles",
+            Name = "Sunny Meadow", Accent = new Color(1f, 0.82f, 0.25f), KingName = "King Bartholomew", JesterName = "Jingles",
             DreamGoal = 30, BossHp = 8,
             Ground = new Color(0.45f, 0.78f, 0.4f), HillA = new Color(0.4f, 0.72f, 0.4f), HillB = new Color(0.36f, 0.66f, 0.45f),
             Stone = new Color(0.82f, 0.78f, 0.9f), StoneDark = new Color(0.62f, 0.58f, 0.74f), Roof = new Color(0.9f, 0.35f, 0.6f),
@@ -36,7 +38,7 @@ public sealed class Realm
         },
         new Realm
         {
-            Name = "Enchanted Forest", KingName = "King Oberon the Overgrown", JesterName = "Tumble",
+            Name = "Enchanted Forest", Robe = new Color(0.15f, 0.45f, 0.3f), Fur = new Color(0.8f, 0.95f, 0.8f), Skin = new Color(0.85f, 0.9f, 0.7f), Accent = new Color(0.5f, 1f, 0.6f), KingName = "King Oberon the Overgrown", JesterName = "Tumble",
             DreamGoal = 36, BossHp = 10, TempoScale = 1.1f, SpeedyMix = 1.8f, SplitterMix = 1.5f,
             Ground = new Color(0.22f, 0.5f, 0.3f), HillA = new Color(0.16f, 0.4f, 0.28f), HillB = new Color(0.2f, 0.46f, 0.34f),
             Stone = new Color(0.55f, 0.66f, 0.55f), StoneDark = new Color(0.36f, 0.46f, 0.38f), Roof = new Color(0.3f, 0.7f, 0.5f),
@@ -53,7 +55,7 @@ public sealed class Realm
         },
         new Realm
         {
-            Name = "Crystal Islands", KingName = "King Glacius the Glittering", JesterName = "Prism",
+            Name = "Crystal Islands", Robe = new Color(0.3f, 0.45f, 0.85f), Fur = new Color(0.9f, 0.97f, 1f), Skin = new Color(0.88f, 0.92f, 1f), Accent = new Color(0.6f, 0.9f, 1f), KingName = "King Glacius the Glittering", JesterName = "Prism",
             DreamGoal = 42, BossHp = 12, TempoScale = 1.15f, ArmoredMix = 2f, SplitterMix = 1.3f,
             Ground = new Color(0.78f, 0.72f, 0.95f), HillA = new Color(0.7f, 0.66f, 0.92f), HillB = new Color(0.62f, 0.78f, 0.95f),
             Stone = new Color(0.78f, 0.9f, 0.98f), StoneDark = new Color(0.55f, 0.7f, 0.88f), Roof = new Color(0.55f, 0.5f, 0.95f),
@@ -68,7 +70,7 @@ public sealed class Realm
         },
         new Realm
         {
-            Name = "Storm Canyon", KingName = "King Thunderhoof the Tempest", JesterName = "Gale",
+            Name = "Storm Canyon", Robe = new Color(0.35f, 0.3f, 0.55f), Fur = new Color(0.75f, 0.75f, 0.85f), Skin = new Color(0.9f, 0.7f, 0.6f), Accent = new Color(1f, 0.9f, 0.3f), KingName = "King Thunderhoof the Tempest", JesterName = "Gale",
             DreamGoal = 48, BossHp = 14, TempoScale = 1.25f, SpeedyMix = 2f, ArmoredMix = 1.5f,
             Ground = new Color(0.75f, 0.5f, 0.38f), HillA = new Color(0.65f, 0.4f, 0.35f), HillB = new Color(0.55f, 0.38f, 0.45f),
             Stone = new Color(0.6f, 0.5f, 0.55f), StoneDark = new Color(0.4f, 0.32f, 0.4f), Roof = new Color(0.35f, 0.4f, 0.9f),
@@ -82,7 +84,7 @@ public sealed class Realm
         },
         new Realm
         {
-            Name = "Candy Clouds", KingName = "Queen Sprinkle the Sweet", JesterName = "Gumdrop",
+            Name = "Candy Clouds", Robe = new Color(0.95f, 0.4f, 0.65f), Fur = new Color(1f, 1f, 1f), Skin = new Color(1f, 0.88f, 0.9f), Accent = new Color(1f, 0.5f, 0.75f), KingName = "Queen Sprinkle the Sweet", JesterName = "Gumdrop",
             DreamGoal = 54, BossHp = 16, TempoScale = 1.3f, SplitterMix = 2.2f, ArmoredMix = 1.3f,
             Ground = new Color(1f, 0.75f, 0.88f), HillA = new Color(0.95f, 0.65f, 0.85f), HillB = new Color(0.85f, 0.7f, 0.98f),
             Stone = new Color(1f, 0.9f, 0.95f), StoneDark = new Color(0.9f, 0.65f, 0.8f), Roof = new Color(0.95f, 0.45f, 0.6f),
@@ -97,7 +99,7 @@ public sealed class Realm
         },
         new Realm
         {
-            Name = "The Dreamless Realm", KingName = "The Dream-Eater", JesterName = "Hush",
+            Name = "The Dreamless Realm", Robe = new Color(0.12f, 0.08f, 0.2f), Fur = new Color(0.3f, 0.25f, 0.4f), Skin = new Color(0.62f, 0.6f, 0.72f), Accent = new Color(0.8f, 0.45f, 1f), KingName = "The Dream-Eater", JesterName = "Hush",
             DreamGoal = 70, BossHp = 24, TempoScale = 1.35f, SpeedyMix = 1.8f, SplitterMix = 1.8f, ArmoredMix = 2f,
             Ground = new Color(0.16f, 0.14f, 0.22f), HillA = new Color(0.12f, 0.1f, 0.2f), HillB = new Color(0.14f, 0.12f, 0.26f),
             Stone = new Color(0.3f, 0.26f, 0.4f), StoneDark = new Color(0.18f, 0.15f, 0.28f), Roof = new Color(0.6f, 0.3f, 0.9f),
@@ -114,6 +116,9 @@ public sealed class Realm
     public static Realm Current => All[Mathf.Clamp(Index, 0, All.Length - 1)];
     public static bool HasNext => Index + 1 < All.Length;
     public static int Unlocked => Mathf.Clamp(PlayerPrefs.GetInt(UnlockKey, 1), 1, All.Length);
+
+    public const string StarsKey = "UnicornPopStars_";
+    public int Stars => PlayerPrefs.GetInt(StarsKey + Name, 0);
 
     public static void Select(int index)
     {

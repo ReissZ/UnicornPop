@@ -319,7 +319,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
         // A faint light pillar so the castle can be seen from across the realm.
         var beam = Prim.Make(PrimitiveType.Cylinder, "Beacon", castle, new Vector3(0, 70f, z + 4f), new Vector3(5f, 70f, 5f), Color.white);
-        beam.GetComponent<Renderer>().sharedMaterial = new Material(Shader.Find("Sprites/Default")) { color = new Color(1f, 0.85f, 1f, 0.2f) };
+        beam.GetComponent<Renderer>().sharedMaterial = new Material(Shader.Find("Sprites/Default")) { color = new Color(realm.Accent.r, realm.Accent.g, realm.Accent.b, 0.2f) };
 
         Prim.Make(PrimitiveType.Cube, "Wall", castle, new Vector3(0, 4.5f, z - 4f), new Vector3(40f, 9f, 3f), stone);
         Prim.Make(PrimitiveType.Cube, "Walkway", castle, new Vector3(0, WallTopY - 0.2f, z - 4.4f), new Vector3(40f, 0.4f, 4f), dark);
@@ -341,9 +341,9 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             Prim.Make(PrimitiveType.Cylinder, "Tower", castle, new Vector3(sx, 9f, z - 4f), new Vector3(7f, 9f, 7f), stone);
             Prim.Make(PrimitiveType.Cylinder, "TowerRing", castle, new Vector3(sx, 18.2f, z - 4f), new Vector3(8f, 0.4f, 8f), dark);
             Prim.Cone("TowerRoof", castle, new Vector3(sx, 22f, z - 4f), new Vector3(8.5f, 8f, 8.5f), roof);
-            Prim.Make(PrimitiveType.Cube, "Window", castle, new Vector3(sx, 12f, z - 7.6f), new Vector3(1f, 2f, 0.3f), new Color(0.3f, 0.25f, 0.4f));
+            Prim.Make(PrimitiveType.Cube, "Window", castle, new Vector3(sx, 12f, z - 7.6f), new Vector3(1f, 2f, 0.3f), Color.Lerp(realm.StoneDark, realm.Accent, 0.7f));
             Prim.Make(PrimitiveType.Cylinder, "Pole", castle, new Vector3(sx, 28.5f, z - 4f), new Vector3(0.15f, 2f, 0.15f), new Color(0.35f, 0.3f, 0.3f));
-            Prim.Cone("Flag", castle, new Vector3(sx + 1.2f, 29.6f, z - 4f), new Vector3(2.4f, 1.6f, 0.15f), new Color(1f, 0.82f, 0.25f), new Vector3(0, 0, -90));
+            Prim.Cone("Flag", castle, new Vector3(sx + 1.2f, 29.6f, z - 4f), new Vector3(2.4f, 1.6f, 0.15f), realm.Accent, new Vector3(0, 0, -90));
         }
 
         // Back towers fill out the skyline.
@@ -521,10 +521,10 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         kingHome = pos;
         king.rotation = Quaternion.Euler(0, 180f, 0);
 
-        var skin = new Color(1f, 0.85f, 0.72f);
-        var robe = new Color(0.75f, 0.12f, 0.2f);
-        var fur = new Color(0.97f, 0.95f, 0.92f);
-        var gold = new Color(1f, 0.82f, 0.2f);
+        var skin = realm.Skin;
+        var robe = realm.Robe;
+        var fur = realm.Fur;
+        var gold = realm.Accent;
 
         Prim.Make(PrimitiveType.Cylinder, "Robe", king, new Vector3(0, 1.0f, 0), new Vector3(1.5f, 1.0f, 1.3f), robe);
         Prim.Make(PrimitiveType.Cylinder, "Hem", king, new Vector3(0, 0.1f, 0), new Vector3(1.6f, 0.1f, 1.4f), fur);
@@ -676,7 +676,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         var flat = unicorn.transform.position - from;
         flat.y = 0;
         flat = flat.normalized;
-        boss = Balloon.Spawn(transform, from, Vector3.zero, BalloonKind.Boss, Balloon.KindColor(BalloonKind.Boss));
+        boss = Balloon.Spawn(transform, from, Vector3.zero, BalloonKind.Boss, realm.Accent);
         boss.transform.localScale = Vector3.one * Balloon.BossScale;
         boss.Hp = boss.MaxHp = realm.BossHp;
         boss.SetDrift(flat * 1.4f + Vector3.up * 0.7f);
@@ -1091,7 +1091,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         Shadowed(new Rect(0, 50 * k + bob, Screen.width, 110 * k), "Unicorn Pop", bigStyle, Mathf.RoundToInt(96 * k), new Color(1f, 0.55f, 0.85f));
         Shadowed(new Rect(0, 150 * k, Screen.width, 40 * k), "Pop the jester's balloons with your horn!", midStyle, Mathf.RoundToInt(26 * k), Color.white);
 
-        Shadowed(new Rect(0, 190 * k, Screen.width, 36 * k), realm.Name + (Realm.Unlocked > 1 ? "   (Left / Right to choose a realm)" : ""), midStyle, Mathf.RoundToInt(26 * k), new Color(1f, 0.9f, 0.6f));
+        DrawRealmMap(k);
         var blink = 0.65f + 0.35f * Mathf.Sin(Time.time * 4f);
         Shadowed(new Rect(0, Screen.height - 210 * k, Screen.width, 50 * k), "Press Space, Enter or click to start", midStyle, Mathf.RoundToInt(34 * k * (0.96f + 0.04f * blink)), new Color(1f, 1f, 1f, blink));
 
