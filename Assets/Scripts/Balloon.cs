@@ -14,6 +14,9 @@ public sealed class Balloon : MonoBehaviour
     // Raised when a balloon floats away unpopped.
     public static event System.Action<Balloon> Escaped;
 
+    // Multiplies how fast balloons rise; the game raises it over time.
+    public static float RiseScale = 1f;
+
     public static readonly Color Gold = new Color(1f, 0.82f, 0.2f);
 
     private static readonly Color[] Palette =
@@ -55,7 +58,7 @@ public sealed class Balloon : MonoBehaviour
         b.Golden = golden;
         b.Color = color;
         b.vel = velocity;
-        b.drift = new Vector3(Random.Range(-0.6f, 0.6f), Random.Range(1.2f, 2.0f), Random.Range(-0.6f, 0.2f));
+        b.drift = new Vector3(Random.Range(-0.6f, 0.6f), Random.Range(1.2f, 2.0f) * RiseScale, Random.Range(-0.6f, 0.2f));
         b.phase = Random.value * 6.28f;
         return b;
     }

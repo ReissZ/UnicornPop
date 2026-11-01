@@ -11,6 +11,11 @@ public sealed class Cannon : MonoBehaviour
     public float Interval = 1.0f;
     public bool Active = true;
 
+    // Difficulty knobs, driven by the game as the round goes on.
+    public float Tempo = 1f;
+    public float GoldenChance = 0.12f;
+    public float DoubleChance;
+
     private Transform world;
     private Transform jester;
     private Transform barrel;
@@ -68,7 +73,7 @@ public sealed class Cannon : MonoBehaviour
             while (!Active) yield return null;
 
             yield return Walk(crateX);
-            var golden = Random.value < 0.12f;
+            var golden = Random.value < GoldenChance;
             var color = golden ? Balloon.Gold : Balloon.RandomColor();
             held = Balloon.BuildVisual("Held", jester, color);
             held.localPosition = new Vector3(0, 4.2f, 0);
@@ -85,13 +90,22 @@ public sealed class Cannon : MonoBehaviour
             shake = 0f;
 
             Fire(color, golden);
+            if (Random.value < DoubleChance) StartCoroutine(SecondShot());
             yield return Idle(Interval, 6f, 0.3f, Vector3.back);
         }
+    }
+
+    // A bonus balloon fired right behind the first one.
+    private IEnumerator SecondShot()
+    {
+        yield return new WaitForSeconds(0.35f);
+        if (Active) Fire(Balloon.RandomColor(), false);
     }
 
     private IEnumerator Idle(float seconds, float hopSpeed, float hopHeight, Vector3 face)
     {
         faceDir = face;
+        seconds /= Tempo;
         for (var t = 0f; t < seconds; t += Time.deltaTime)
         {
             Place(Mathf.Abs(Mathf.Sin(Time.time * hopSpeed)) * hopHeight);
@@ -104,7 +118,7 @@ public sealed class Cannon : MonoBehaviour
         faceDir = new Vector3(Mathf.Sign(target - x), 0, 0);
         while (Mathf.Abs(x - target) > 0.05f)
         {
-            x = Mathf.MoveTowards(x, target, WalkSpeed * Time.deltaTime);
+            x = Mathf.MoveTowards(x, target, WalkSpeed * Tempo * Time.deltaTime);
             Place(Mathf.Abs(Mathf.Sin(Time.time * 14f)) * 0.2f);
             yield return null;
         }

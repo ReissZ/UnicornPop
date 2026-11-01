@@ -27,6 +27,15 @@ public sealed class UnicornPopGame : MonoBehaviour
     private const float ComboWindow = 2.2f;
     private const float HitRadius = 1.3f;
 
+    private const float LevelSeconds = 20f;
+    private int level = 1;
+    private float playTime;
+    private float levelBanner;
+    private Transform king;
+    private Transform kingArmL, kingArmR;
+    private float kingCheer, kingGrump;
+    private Vector3 kingHome;
+
     private int score;
     private int best;
     private bool newRecord;
@@ -108,6 +117,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     {
         onTitle = false;
         skipTitle = true;
+        Balloon.RiseScale = 1f;
         cannon.Active = true;
         startFrame = Time.frameCount;
         Sfx.Start();
@@ -277,6 +287,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         }
 
         BuildJester(world, new Vector3(5.5f, WallTopY, z));
+        BuildKing(world, new Vector3(-9f, WallTopY, z));
     }
 
     private void BuildJester(Transform world, Vector3 pos)
@@ -346,12 +357,100 @@ public sealed class UnicornPopGame : MonoBehaviour
             return;
         }
 
+        UpdateDifficulty();
+
         if (comboTimer > 0f)
         {
             comboTimer -= Time.deltaTime;
             if (comboTimer <= 0f) combo = 0;
         }
         CheckHornHits();
+    }
+
+    // Every LevelSeconds the cannon works faster, golden balloons get more common and balloons rise quicker.
+    private void UpdateDifficulty()
+    {
+        playTime += Time.deltaTime;
+        var newLevel = 1 + Mathf.FloorToInt(playTime / LevelSeconds);
+        if (newLevel != level)
+        {
+            level = newLevel;
+            levelBanner = 2f;
+            Sfx.Start();
+            effects.Text(unicorn.transform.position + Vector3.up * 4f, "Level " + level + "!", new Color(1f, 0.9f, 0.4f), 40);
+            kingCheer = 1.2f;
+        }
+        var d = level - 1;
+        cannon.Tempo = Mathf.Min(2.2f, 1f + d * 0.12f);
+        cannon.GoldenChance = Mathf.Min(0.25f, 0.12f + d * 0.015f);
+        cannon.DoubleChance = Mathf.Clamp01((d - 2) * 0.08f);
+        Balloon.RiseScale = Mathf.Min(1.8f, 1f + d * 0.06f);
+        if (levelBanner > 0f) levelBanner -= Time.deltaTime;
+        UpdateKing();
+    }
+
+    private void BuildKing(Transform world, Vector3 pos)
+    {
+        king = new GameObject("King").transform;
+        king.SetParent(world, false);
+        king.position = pos;
+        kingHome = pos;
+        king.rotation = Quaternion.Euler(0, 180f, 0);
+
+        var skin = new Color(1f, 0.85f, 0.72f);
+        var robe = new Color(0.75f, 0.12f, 0.2f);
+        var fur = new Color(0.97f, 0.95f, 0.92f);
+        var gold = new Color(1f, 0.82f, 0.2f);
+
+        Prim.Make(PrimitiveType.Cylinder, "Robe", king, new Vector3(0, 1.0f, 0), new Vector3(1.5f, 1.0f, 1.3f), robe);
+        Prim.Make(PrimitiveType.Cylinder, "Hem", king, new Vector3(0, 0.1f, 0), new Vector3(1.6f, 0.1f, 1.4f), fur);
+        Prim.Make(PrimitiveType.Sphere, "Collar", king, new Vector3(0, 1.95f, 0), new Vector3(1.3f, 0.45f, 1.1f), fur);
+        Prim.Make(PrimitiveType.Sphere, "Head", king, new Vector3(0, 2.5f, 0), Vector3.one * 0.95f, skin);
+        Prim.Make(PrimitiveType.Sphere, "Beard", king, new Vector3(0, 2.15f, 0.25f), new Vector3(0.8f, 0.7f, 0.5f), fur);
+        Prim.Make(PrimitiveType.Sphere, "Nose", king, new Vector3(0, 2.5f, 0.5f), Vector3.one * 0.22f, new Color(0.95f, 0.55f, 0.5f));
+        foreach (var sx in new[] { -0.2f, 0.2f })
+        {
+            Prim.Make(PrimitiveType.Sphere, "Eye", king, new Vector3(sx, 2.65f, 0.4f), Vector3.one * 0.12f, Color.black);
+        }
+        Prim.Make(PrimitiveType.Cylinder, "CrownBand", king, new Vector3(0, 3.05f, 0), new Vector3(0.9f, 0.14f, 0.9f), gold);
+        for (var i = 0; i < 5; i++)
+        {
+            var a = i / 5f * Mathf.PI * 2f;
+            Prim.Cone("CrownPoint", king, new Vector3(Mathf.Cos(a) * 0.35f, 3.3f, Mathf.Sin(a) * 0.35f), new Vector3(0.22f, 0.4f, 0.22f), gold);
+        }
+
+        kingArmL = new GameObject("ArmL").transform;
+        kingArmL.SetParent(king, false);
+        kingArmL.localPosition = new Vector3(-0.75f, 1.8f, 0);
+        Prim.Make(PrimitiveType.Capsule, "Sleeve", kingArmL, new Vector3(0, -0.5f, 0), new Vector3(0.35f, 0.5f, 0.35f), robe);
+        Prim.Make(PrimitiveType.Sphere, "Hand", kingArmL, new Vector3(0, -1.05f, 0), Vector3.one * 0.3f, skin);
+        kingArmR = new GameObject("ArmR").transform;
+        kingArmR.SetParent(king, false);
+        kingArmR.localPosition = new Vector3(0.75f, 1.8f, 0);
+        Prim.Make(PrimitiveType.Capsule, "Sleeve", kingArmR, new Vector3(0, -0.5f, 0), new Vector3(0.35f, 0.5f, 0.35f), robe);
+        Prim.Make(PrimitiveType.Sphere, "Hand", kingArmR, new Vector3(0, -1.05f, 0), Vector3.one * 0.3f, skin);
+    }
+
+    // The king watches the unicorn, cheers on pops and stomps when a balloon escapes.
+    private void UpdateKing()
+    {
+        var dt = Time.deltaTime;
+        kingCheer = Mathf.Max(0f, kingCheer - dt);
+        kingGrump = Mathf.Max(0f, kingGrump - dt);
+        var hop = kingCheer > 0f ? Mathf.Abs(Mathf.Sin(Time.time * 12f)) * 0.9f : 0f;
+        var shake = kingGrump > 0f ? Mathf.Sin(Time.time * 50f) * 0.12f : 0f;
+        king.position = kingHome + new Vector3(shake, hop, 0);
+
+        var look = unicorn.transform.position - king.position;
+        look.y = 0f;
+        if (look.sqrMagnitude > 0.01f)
+        {
+            king.rotation = Quaternion.Slerp(king.rotation, Quaternion.LookRotation(look), 1f - Mathf.Exp(-3f * dt));
+        }
+
+        var armUp = kingCheer > 0f ? 150f + Mathf.Sin(Time.time * 14f) * 20f : (kingGrump > 0f ? 60f : 8f);
+        kingArmL.localRotation = Quaternion.Euler(0, 0, -armUp);
+        kingArmR.localRotation = Quaternion.Euler(0, 0, armUp);
     }
 
     // The horn is tested as a segment, and also as the path the tip swept this frame so dashes can't skip through a balloon.
@@ -394,6 +493,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         effects.Text(pos + Vector3.up, "+" + points, b.Golden ? Balloon.Gold : Color.white, b.Golden ? 38 : 28);
         if (combo >= 2) effects.Text(pos + Vector3.up * 2.2f, "COMBO x" + combo, new Color(1f, 0.6f, 0.85f), 22);
         if (b.Golden) Sfx.Golden(); else Sfx.Pop(combo);
+        if (b.Golden || combo >= 4) kingCheer = 0.8f;
         b.Pop();
     }
 
@@ -402,6 +502,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         if (gameOver || b.Golden) return;
         hearts--;
         effects.Text(b.transform.position, "Escaped!", new Color(1f, 0.4f, 0.4f), 26);
+        kingGrump = 0.9f;
         if (hearts > 0)
         {
             Sfx.Lose();
@@ -509,6 +610,12 @@ public sealed class UnicornPopGame : MonoBehaviour
         DrawBar(12, 40, 160, 12, unicorn.Stamina01, new Color(0.5f, 0.9f, 1f));
         DrawBar(12, 58, 160, 8, unicorn.DashReady01, new Color(1f, 0.85f, 0.3f));
 
+        GUI.Label(new Rect(12, 72, 200, 26), "Level " + level, hint);
+        if (levelBanner > 0f)
+        {
+            Shadowed(new Rect(0, Screen.height * 0.3f, Screen.width, 70 * k), "Level " + level + " - faster!", bigStyle, Mathf.RoundToInt(54 * k), new Color(1f, 0.9f, 0.4f));
+        }
+
         // Score and combo, top centre.
         Shadowed(new Rect(0, 6 * k, Screen.width, 60 * k), score.ToString(), scoreStyle, Mathf.RoundToInt(46 * k), Color.white);
         if (combo >= 2)
@@ -536,7 +643,7 @@ public sealed class UnicornPopGame : MonoBehaviour
             GUI.color = Color.white;
             var cy = Screen.height * 0.5f;
             Shadowed(new Rect(0, cy - 120 * k, Screen.width, 80 * k), "Game Over", bigStyle, Mathf.RoundToInt(72 * k), new Color(1f, 0.5f, 0.7f));
-            Shadowed(new Rect(0, cy - 30 * k, Screen.width, 50 * k), "Score " + score, midStyle, Mathf.RoundToInt(40 * k), Color.white);
+            Shadowed(new Rect(0, cy - 30 * k, Screen.width, 50 * k), "Score " + score + "   Level " + level, midStyle, Mathf.RoundToInt(40 * k), Color.white);
             if (newRecord)
             {
                 var pulse = 1f + Mathf.Sin(Time.time * 6f) * 0.08f;
