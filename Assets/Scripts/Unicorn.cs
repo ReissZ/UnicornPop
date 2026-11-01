@@ -29,8 +29,10 @@ public sealed class Unicorn : MonoBehaviour
 
     private Transform model;
     private readonly Transform[] legs = new Transform[4];
-    private readonly Transform[] tail = new Transform[4];
+    private readonly Transform[] tail = new Transform[6];
     private readonly Transform[] wings = new Transform[2];
+    private readonly Transform[][] feathers = new Transform[2][];
+    private readonly Transform[] mane = new Transform[6];
     private readonly List<Spark> sparks = new List<Spark>();
 
     private float yaw;
@@ -42,13 +44,16 @@ public sealed class Unicorn : MonoBehaviour
     private float flapT = 1f;
     private float flapCool;
     private float walkCycle;
-    private float wingAngle = 80f;
-    private float wingSpread = 0.45f;
+    private float wingAngle = 20f;
+    private float wingFold = 1f;
     private float pitch;
     private float roll;
 
     // Off while the title or game-over screen is up.
     public bool Controllable { get; set; } = true;
+    private static readonly float[] FeatherLen = { 1.75f, 1.65f, 1.5f, 1.3f, 1.1f, 0.9f };
+    private static readonly float[] FeatherFan = { 0f, 12f, 25f, 38f, 52f, 66f };
+
     public Transform HornTip { get; private set; }
     public Transform HornBase { get; private set; }
     public float Stamina01 => stamina / MaxStamina;
@@ -66,29 +71,41 @@ public sealed class Unicorn : MonoBehaviour
         var shade = new Color(0.86f, 0.84f, 0.94f);
         var pink = new Color(1f, 0.55f, 0.8f);
         var gold = new Color(1f, 0.82f, 0.25f);
-        var rainbow = new[]
+        var lilac = new Color(0.72f, 0.62f, 1f);
+        var pastel = new[]
         {
-            new Color(1f, 0.45f, 0.6f), new Color(1f, 0.75f, 0.35f),
-            new Color(0.5f, 0.85f, 0.6f), new Color(0.5f, 0.65f, 1f),
+            new Color(1f, 0.5f, 0.6f), new Color(1f, 0.72f, 0.4f), new Color(1f, 0.93f, 0.5f),
+            new Color(0.55f, 0.88f, 0.6f), new Color(0.5f, 0.75f, 1f), new Color(0.75f, 0.6f, 1f),
         };
 
         model = new GameObject("Model").transform;
         model.SetParent(transform, false);
 
         Prim.Make(PrimitiveType.Sphere, "Torso", model, new Vector3(0, 1.0f, 0), new Vector3(0.75f, 0.75f, 1.4f), white);
+        Prim.Make(PrimitiveType.Sphere, "Chest", model, new Vector3(0, 1.1f, 0.45f), new Vector3(0.62f, 0.68f, 0.6f), white);
+        Prim.Make(PrimitiveType.Sphere, "Rump", model, new Vector3(0, 1.02f, -0.5f), new Vector3(0.7f, 0.72f, 0.7f), white);
         Prim.Make(PrimitiveType.Cylinder, "Neck", model, new Vector3(0, 1.45f, 0.6f), new Vector3(0.32f, 0.38f, 0.32f), white, new Vector3(35, 0, 0));
-        Prim.Make(PrimitiveType.Sphere, "Head", model, new Vector3(0, 1.8f, 0.95f), new Vector3(0.42f, 0.42f, 0.55f), white);
-        Prim.Make(PrimitiveType.Sphere, "Snout", model, new Vector3(0, 1.7f, 1.25f), new Vector3(0.3f, 0.27f, 0.32f), new Color(1f, 0.9f, 0.95f));
-        Prim.Make(PrimitiveType.Sphere, "Nose", model, new Vector3(0, 1.72f, 1.4f), new Vector3(0.1f, 0.08f, 0.08f), pink);
-        foreach (var s in new[] { -1f, 1f })
+        Prim.Make(PrimitiveType.Sphere, "Head", model, new Vector3(0, 1.8f, 0.95f), new Vector3(0.44f, 0.44f, 0.55f), white);
+        Prim.Make(PrimitiveType.Sphere, "Snout", model, new Vector3(0, 1.7f, 1.25f), new Vector3(0.3f, 0.27f, 0.32f), new Color(1f, 0.92f, 0.96f));
+        Prim.Make(PrimitiveType.Sphere, "Nose", model, new Vector3(0, 1.72f, 1.4f), new Vector3(0.12f, 0.09f, 0.08f), pink);
+        Prim.Make(PrimitiveType.Sphere, "Mouth", model, new Vector3(0, 1.6f, 1.34f), new Vector3(0.14f, 0.025f, 0.08f), new Color(0.85f, 0.4f, 0.55f));
+        foreach (var sd in new[] { -1f, 1f })
         {
-            Prim.Make(PrimitiveType.Sphere, "Eye", model, new Vector3(0.17f * s, 1.88f, 1.12f), Vector3.one * 0.1f, new Color(0.15f, 0.08f, 0.25f));
-            Prim.Make(PrimitiveType.Sphere, "Shine", model, new Vector3(0.19f * s, 1.91f, 1.16f), Vector3.one * 0.035f, Color.white);
-            Prim.Cone("Ear", model, new Vector3(0.14f * s, 2.07f, 0.85f), new Vector3(0.11f, 0.22f, 0.11f), pink, new Vector3(0, 0, -15f * s));
+            Prim.Make(PrimitiveType.Sphere, "Eye", model, new Vector3(0.18f * sd, 1.87f, 1.1f), new Vector3(0.12f, 0.15f, 0.1f), new Color(0.2f, 0.1f, 0.35f));
+            Prim.Make(PrimitiveType.Sphere, "Shine", model, new Vector3(0.205f * sd, 1.915f, 1.15f), Vector3.one * 0.045f, Color.white);
+            Prim.Make(PrimitiveType.Sphere, "Shine2", model, new Vector3(0.2f * sd, 1.83f, 1.14f), Vector3.one * 0.02f, Color.white);
+            Prim.Make(PrimitiveType.Cylinder, "Lash", model, new Vector3(0.21f * sd, 1.98f, 1.06f), new Vector3(0.015f, 0.05f, 0.015f), new Color(0.2f, 0.1f, 0.35f), new Vector3(0, 0, -35f * sd));
+            Prim.Make(PrimitiveType.Sphere, "Blush", model, new Vector3(0.19f * sd, 1.74f, 1.12f), new Vector3(0.08f, 0.06f, 0.05f), new Color(1f, 0.68f, 0.78f));
+            Prim.Cone("Ear", model, new Vector3(0.13f * sd, 2.06f, 0.8f), new Vector3(0.12f, 0.26f, 0.1f), white, new Vector3(-8f, 0, -12f * sd));
+            Prim.Cone("EarInner", model, new Vector3(0.13f * sd, 2.05f, 0.82f), new Vector3(0.07f, 0.18f, 0.05f), pink, new Vector3(-8f, 0, -12f * sd));
         }
 
-        // Golden horn, angled up and forward.
+        // Golden horn with spiral rings, angled up and forward.
         var horn = Prim.Cone("Horn", model, new Vector3(0, 2.18f, 1.26f), new Vector3(0.13f, 0.6f, 0.13f), gold, new Vector3(50, 0, 0));
+        foreach (var ry in new[] { -0.25f, -0.02f, 0.2f })
+        {
+            Prim.Make(PrimitiveType.Cylinder, "Ring", horn, new Vector3(0, ry, 0), new Vector3((0.5f - ry) * 1.15f, 0.02f, (0.5f - ry) * 1.15f), new Color(0.9f, 0.62f, 0.12f));
+        }
         HornTip = new GameObject("HornTip").transform;
         HornTip.SetParent(horn, false);
         HornTip.localPosition = new Vector3(0, 0.5f, 0);
@@ -96,9 +113,16 @@ public sealed class Unicorn : MonoBehaviour
         HornBase.SetParent(horn, false);
         HornBase.localPosition = new Vector3(0, -0.5f, 0);
 
-        for (var i = 0; i < 4; i++)
+        // Forelock between the ears, then a mane that flows down the back of the neck.
+        Prim.Make(PrimitiveType.Sphere, "Forelock", model, new Vector3(0, 2.0f, 0.9f), new Vector3(0.2f, 0.2f, 0.34f), pastel[0], new Vector3(-20, 0, 0));
+        for (var i = 0; i < mane.Length; i++)
         {
-            Prim.Make(PrimitiveType.Sphere, "Mane", model, new Vector3(0, 2.0f - i * 0.2f, 0.55f - i * 0.12f), new Vector3(0.2f, 0.3f, 0.34f), rainbow[i]);
+            var t = i / (mane.Length - 1f);
+            var piv = new GameObject("Mane").transform;
+            piv.SetParent(model, false);
+            piv.localPosition = new Vector3(0, Mathf.Lerp(1.98f, 1.4f, t), Mathf.Lerp(0.66f, 0.2f, t));
+            Prim.Make(PrimitiveType.Sphere, "ManeBlob", piv, Vector3.zero, new Vector3(0.2f, 0.32f, 0.3f), pastel[i]);
+            mane[i] = piv;
         }
 
         var hips = new[] { new Vector3(-0.24f, 0.85f, 0.45f), new Vector3(0.24f, 0.85f, 0.45f), new Vector3(-0.24f, 0.85f, -0.45f), new Vector3(0.24f, 0.85f, -0.45f) };
@@ -107,8 +131,11 @@ public sealed class Unicorn : MonoBehaviour
             var pivot = new GameObject("Leg").transform;
             pivot.SetParent(model, false);
             pivot.localPosition = hips[i];
-            Prim.Make(PrimitiveType.Cylinder, "Shin", pivot, new Vector3(0, -0.4f, 0), new Vector3(0.14f, 0.4f, 0.14f), i % 2 == 0 ? white : shade);
-            Prim.Make(PrimitiveType.Sphere, "Hoof", pivot, new Vector3(0, -0.8f, 0), new Vector3(0.17f, 0.12f, 0.2f), new Color(0.75f, 0.65f, 0.9f));
+            var coat = i % 2 == 0 ? white : shade;
+            Prim.Make(PrimitiveType.Cylinder, "Thigh", pivot, new Vector3(0, -0.2f, 0), new Vector3(0.2f, 0.25f, 0.2f), coat);
+            Prim.Make(PrimitiveType.Cylinder, "Shin", pivot, new Vector3(0, -0.5f, 0), new Vector3(0.13f, 0.3f, 0.13f), coat);
+            Prim.Make(PrimitiveType.Sphere, "Fetlock", pivot, new Vector3(0, -0.74f, 0), Vector3.one * 0.17f, coat);
+            Prim.Make(PrimitiveType.Cylinder, "Hoof", pivot, new Vector3(0, -0.82f, 0.01f), new Vector3(0.19f, 0.05f, 0.21f), gold);
             legs[i] = pivot;
         }
 
@@ -116,20 +143,34 @@ public sealed class Unicorn : MonoBehaviour
         {
             var piv = new GameObject("Tail").transform;
             piv.SetParent(model, false);
-            piv.localPosition = new Vector3(0, 1.1f, -0.65f);
-            Prim.Make(PrimitiveType.Sphere, "TailPiece", piv, new Vector3(0, -0.1f - i * 0.05f, -0.2f - i * 0.2f), new Vector3(0.22f, 0.22f, 0.34f), rainbow[i]);
+            piv.localPosition = new Vector3(0, 1.1f, -0.8f);
+            var w = 0.26f - i * 0.02f;
+            Prim.Make(PrimitiveType.Sphere, "TailPiece", piv, new Vector3(0, -0.04f - i * 0.04f, -0.18f - i * 0.2f), new Vector3(w, w, 0.38f), pastel[i]);
             tail[i] = piv;
         }
 
+        // Wings: a leading-edge bone and a fan of feathers. Each feather sits at its own height so they never z-fight.
         for (var i = 0; i < 2; i++)
         {
-            var s = i == 0 ? 1f : -1f;
+            var sd = i == 0 ? 1f : -1f;
             var wing = new GameObject("Wing").transform;
             wing.SetParent(model, false);
-            wing.localPosition = new Vector3(0.3f * s, 1.3f, 0.15f);
-            Prim.Make(PrimitiveType.Cube, "Feather", wing, new Vector3(0.45f * s, 0, 0), new Vector3(0.9f, 0.05f, 0.5f), white);
-            Prim.Make(PrimitiveType.Cube, "Feather", wing, new Vector3(0.65f * s, 0, -0.3f), new Vector3(0.9f, 0.05f, 0.4f), pink);
-            Prim.Make(PrimitiveType.Cube, "Feather", wing, new Vector3(0.85f * s, 0, -0.55f), new Vector3(0.8f, 0.05f, 0.3f), new Color(0.75f, 0.65f, 1f));
+            wing.localPosition = new Vector3(0.28f * sd, 1.3f, 0.1f);
+            Prim.Make(PrimitiveType.Sphere, "Shoulder", wing, Vector3.zero, Vector3.one * 0.28f, white);
+            Prim.Make(PrimitiveType.Cylinder, "Bone", wing, new Vector3(sd * 0.6f, 0.04f, 0.05f), new Vector3(0.09f, 0.6f, 0.09f), white, new Vector3(0, 0, 90));
+
+            feathers[i] = new Transform[FeatherLen.Length];
+            for (var f = 0; f < FeatherLen.Length; f++)
+            {
+                var t = f / (FeatherLen.Length - 1f);
+                var color = t < 0.5f ? Color.Lerp(white, pink, t * 2f) : Color.Lerp(pink, lilac, (t - 0.5f) * 2f);
+                var pivot = new GameObject("Feather").transform;
+                pivot.SetParent(wing, false);
+                pivot.localPosition = new Vector3(sd * (0.1f + f * 0.04f), 0, -0.03f * f);
+                var len = FeatherLen[f];
+                Prim.Make(PrimitiveType.Sphere, "Vane", pivot, new Vector3(sd * len * 0.5f, f * 0.022f, 0), new Vector3(len, 0.045f, 0.34f - f * 0.02f), color);
+                feathers[i][f] = pivot;
+            }
             wings[i] = wing;
         }
 
@@ -280,36 +321,48 @@ public sealed class Unicorn : MonoBehaviour
         }
         for (var i = 0; i < tail.Length; i++)
         {
-            var lift = airborne ? 10f : 25f;
-            tail[i].localRotation = Quaternion.Euler(-lift + i * 4f, Mathf.Sin(Time.time * 5f + i * 0.6f) * 10f, 0);
+            var lift = airborne ? 8f : 22f;
+            var sway = Mathf.Sin(Time.time * 4f - i * 0.5f) * (4f + i * 2.5f);
+            tail[i].localRotation = Quaternion.Euler(-lift + i * 3f, sway, 0);
+        }
+        for (var i = 0; i < mane.Length; i++)
+        {
+            var lift = airborne ? 10f : 0f;
+            mane[i].localRotation = Quaternion.Euler(-lift * i / 5f, 0, Mathf.Sin(Time.time * 4f - i * 0.6f) * 6f);
         }
 
-        // Wings stay folded on the ground, beat on a flap and hold open while gliding.
+        PoseWings(airborne, dt);
+    }
+
+    // Wings fold back along the body on the ground, beat on a flap (feather tips lag the bone) and stay open in a glide.
+    private void PoseWings(bool airborne, float dt)
+    {
         if (flapT < 1f) flapT += dt / 0.35f;
         float angle;
-        float spread;
-        if (!airborne)
+        if (!airborne) angle = 18f;
+        else if (flapT < 1f) angle = 55f * Mathf.Cos(flapT * Mathf.PI * 2f) - 5f;
+        else angle = 10f + Mathf.Sin(Time.time * 3f) * 6f;
+
+        var previous = wingAngle;
+        wingAngle = Mathf.Lerp(wingAngle, angle, 1f - Mathf.Exp(-(flapT < 1f ? 30f : 10f) * dt));
+        wingFold = Mathf.Lerp(wingFold, airborne ? 0f : 1f, 1f - Mathf.Exp(-12f * dt));
+
+        // Angular speed in degrees per second; the feather tips bend against the motion.
+        var speed = dt > 0f ? (wingAngle - previous) / dt : 0f;
+        var drag = Mathf.Clamp(-speed * 0.06f, -35f, 35f);
+
+        for (var w = 0; w < 2; w++)
         {
-            angle = 80f;
-            spread = 0.45f;
+            var sd = w == 0 ? 1f : -1f;
+            wings[w].localRotation = Quaternion.Euler(0, sd * wingFold * 78f, 0) * Quaternion.Euler(0, 0, sd * wingAngle);
+            wings[w].localScale = new Vector3(Mathf.Lerp(1f, 0.55f, wingFold), 1f, 1f);
+            for (var f = 0; f < feathers[w].Length; f++)
+            {
+                var fan = FeatherFan[f] * (1f - 0.7f * wingFold);
+                var bend = drag * (f + 1f) / feathers[w].Length;
+                feathers[w][f].localRotation = Quaternion.Euler(0, 0, sd * bend) * Quaternion.Euler(0, sd * fan, 0);
+            }
         }
-        else if (flapT < 1f)
-        {
-            angle = 55f * Mathf.Cos(flapT * Mathf.PI * 2f) - 5f;
-            spread = 1f;
-        }
-        else
-        {
-            angle = 12f + Mathf.Sin(Time.time * 4f) * 8f;
-            spread = 1f;
-        }
-        var wk = 1f - Mathf.Exp(-(flapT < 1f ? 30f : 10f) * dt);
-        wingAngle = Mathf.Lerp(wingAngle, angle, wk);
-        wingSpread = Mathf.Lerp(wingSpread, spread, wk);
-        wings[0].localRotation = Quaternion.Euler(0, 0, wingAngle);
-        wings[1].localRotation = Quaternion.Euler(0, 0, -wingAngle);
-        wings[0].localScale = new Vector3(wingSpread, 1f, 1f);
-        wings[1].localScale = new Vector3(wingSpread, 1f, 1f);
     }
 
     private static readonly Color[] Rainbow =
