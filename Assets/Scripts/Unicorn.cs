@@ -58,6 +58,12 @@ public sealed class Unicorn : MonoBehaviour
     public Transform HornBase { get; private set; }
     public float Stamina01 => stamina / MaxStamina;
     public float DashReady01 => 1f - Mathf.Clamp01(dashCd / DashCooldown);
+    public void StarBoost()
+    {
+        stamina = MaxStamina;
+        dashCd = 0f;
+    }
+
     public bool Dashing => dashT > 0f;
     public Vector3 Forward => Quaternion.Euler(0, yaw, 0) * Vector3.forward;
     public bool Grounded => transform.position.y <= 0.01f;

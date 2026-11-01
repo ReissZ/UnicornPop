@@ -28,7 +28,7 @@ Flaps use stamina (blue bar); the dash cooldown is the yellow bar.
 - [x] Batch 5: difficulty ramp (levels) and a cheering king
 - [x] Batch 6: dreamland scenery (gradient sky, sun, rainbow, floating islands, pond, flowers, winding path)
 - [x] Batch 7: living world (butterflies, fireflies, birds, castle banners, glowing windows, drawbridge)
-- [ ] Batch 8: new balloons (rainbow, heart, star, storm)
+- [x] Batch 8: new balloons (rainbow, heart, star, storm)
 - [ ] Batch 9: power-ups and a giant boss balloon
 - [ ] Batch 10: level themes (sunset, night, candy clouds, aurora) with level banners
 - [ ] Batch 11: dreamy procedural music and ambience

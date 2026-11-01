@@ -23,6 +23,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     private const int StartHearts = 3;
     private const int MaxCombo = 8;
     private const float ComboWindow = 2.2f;
+    private const float StarPowerSeconds = 6f;
     private const float HitRadius = 1.3f;
 
     private const float LevelSeconds = 20f;
@@ -38,6 +39,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     private int best;
     private bool newRecord;
     private int hearts = StartHearts;
+    private float starPower;
     private int combo;
     private float comboTimer;
     private bool gameOver;
@@ -424,6 +426,15 @@ public sealed class UnicornPopGame : MonoBehaviour
         }
 
         UpdateDifficulty();
+        if (starPower > 0f)
+        {
+            starPower -= Time.deltaTime;
+            var center = unicorn.transform.position + Vector3.up * 1.8f;
+            foreach (var bl in Balloon.Active)
+            {
+                if (bl.Kind != BalloonKind.Storm) bl.Pull(center, 16f, 9f, Time.deltaTime);
+            }
+        }
 
         if (comboTimer > 0f)
         {
@@ -450,6 +461,10 @@ public sealed class UnicornPopGame : MonoBehaviour
         cannon.Tempo = Mathf.Min(2.2f, 1f + d * 0.12f);
         cannon.GoldenChance = Mathf.Min(0.25f, 0.12f + d * 0.015f);
         cannon.DoubleChance = Mathf.Clamp01((d - 2) * 0.08f);
+        cannon.RainbowChance = level >= 2 ? 0.05f : 0f;
+        cannon.StarChance = level >= 2 ? 0.04f : 0f;
+        cannon.HeartChance = hearts < StartHearts ? 0.1f : 0.02f;
+        cannon.StormChance = level >= 3 ? Mathf.Min(0.18f, 0.06f + (level - 3) * 0.02f) : 0f;
         Balloon.RiseScale = Mathf.Min(1.8f, 1f + d * 0.06f);
         if (levelBanner > 0f) levelBanner -= Time.deltaTime;
         UpdateKing();
@@ -530,6 +545,8 @@ public sealed class UnicornPopGame : MonoBehaviour
 
         for (var i = Balloon.Active.Count - 1; i >= 0; i--)
         {
+            // A rainbow pop can remove other balloons from the list mid-loop.
+            if (i >= Balloon.Active.Count) continue;
             var b = Balloon.Active[i];
             var c = b.transform.position;
             if (SegmentDistance(c, root, tip) < HitRadius || SegmentDistance(c, prev, tip) < HitRadius)
@@ -549,25 +566,89 @@ public sealed class UnicornPopGame : MonoBehaviour
 
     private void PopBalloon(Balloon b)
     {
+        var pos = b.transform.position;
+        if (b.Kind == BalloonKind.Storm)
+        {
+            combo = 0;
+            effects.Burst(pos, new Color(1f, 0.95f, 0.3f), 30, 9f, 0.5f);
+            effects.Burst(pos, new Color(0.45f, 0.35f, 0.6f), 20, 6f);
+            Sfx.Boom();
+            b.Pop();
+            LoseHeart(pos, "Zap!");
+            return;
+        }
+
         combo = Mathf.Min(MaxCombo, comboTimer > 0f ? combo + 1 : 1);
         comboTimer = ComboWindow;
+        var special = b.Kind != BalloonKind.Normal;
         var points = (b.Golden ? 5 : 1) * combo;
+        var textColor = b.Golden ? Balloon.Gold : Color.white;
+        var label = "";
+
+        switch (b.Kind)
+        {
+            case BalloonKind.Rainbow:
+                points = 3 * combo;
+                label = "RAINBOW!";
+                textColor = new Color(1f, 0.6f, 0.85f);
+                effects.Burst(pos, Color.white, 30, 12f);
+                // Chain reaction: every ordinary balloon nearby pops too.
+                for (var i = Balloon.Active.Count - 1; i >= 0; i--)
+                {
+                    var o = Balloon.Active[i];
+                    if (o == b || o.Kind == BalloonKind.Storm || Vector3.Distance(o.transform.position, pos) > 14f) continue;
+                    points += combo;
+                    effects.Burst(o.transform.position, o.Color, 14, 5f);
+                    o.Pop();
+                }
+                break;
+            case BalloonKind.Heart:
+                points = 2 * combo;
+                if (hearts < StartHearts)
+                {
+                    hearts++;
+                    label = "+1 HEART!";
+                }
+                else
+                {
+                    points += 10;
+                    label = "Full hearts +10";
+                }
+                textColor = new Color(1f, 0.4f, 0.55f);
+                effects.Burst(pos, new Color(1f, 0.45f, 0.6f), 26, 7f);
+                break;
+            case BalloonKind.Star:
+                points = 2 * combo;
+                label = "STAR POWER!";
+                textColor = new Color(0.55f, 0.95f, 1f);
+                starPower = StarPowerSeconds;
+                unicorn.StarBoost();
+                effects.Burst(pos, new Color(0.7f, 0.95f, 1f), 30, 9f);
+                break;
+        }
         score += points;
 
-        var pos = b.transform.position;
         effects.Burst(pos, b.Color, b.Golden ? 36 : 20, b.Golden ? 9f : 6f);
-        effects.Text(pos + Vector3.up, "+" + points, b.Golden ? Balloon.Gold : Color.white, b.Golden ? 38 : 28);
+        effects.Text(pos + Vector3.up, "+" + points, textColor, special ? 38 : 28);
+        if (label.Length > 0) effects.Text(pos + Vector3.up * 3.4f, label, textColor, 30);
         if (combo >= 2) effects.Text(pos + Vector3.up * 2.2f, "COMBO x" + combo, new Color(1f, 0.6f, 0.85f), 22);
-        if (b.Golden) Sfx.Golden(); else Sfx.Pop(combo);
-        if (b.Golden || combo >= 4) kingCheer = 0.8f;
+        if (special) Sfx.Golden(); else Sfx.Pop(combo);
+        if (special || combo >= 4) kingCheer = 0.8f;
         b.Pop();
     }
 
     private void OnBalloonEscaped(Balloon b)
     {
-        if (gameOver || b.Golden) return;
+        // Only ordinary balloons count against you; bonus and storm balloons can float away.
+        if (gameOver || b.Kind != BalloonKind.Normal) return;
+        LoseHeart(b.transform.position, "Escaped!");
+    }
+
+    private void LoseHeart(Vector3 pos, string text)
+    {
+        if (gameOver) return;
         hearts--;
-        effects.Text(b.transform.position, "Escaped!", new Color(1f, 0.4f, 0.4f), 26);
+        effects.Text(pos, text, new Color(1f, 0.4f, 0.4f), 26);
         kingGrump = 0.9f;
         if (hearts > 0)
         {
@@ -576,6 +657,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         }
 
         gameOver = true;
+        starPower = 0f;
         cannon.Active = false;
         if (score > best)
         {
@@ -691,6 +773,13 @@ public sealed class UnicornPopGame : MonoBehaviour
             DrawBar(Screen.width * 0.5f - w * 0.5f, 94 * k, w, 8 * k, comboTimer / ComboWindow, new Color(1f, 0.6f, 0.85f));
         }
 
+        if (starPower > 0f)
+        {
+            var sw = 160 * k;
+            Shadowed(new Rect(0, 104 * k, Screen.width, 24 * k), "Star power", scoreStyle, Mathf.RoundToInt(18 * k), new Color(0.55f, 0.95f, 1f));
+            DrawBar(Screen.width * 0.5f - sw * 0.5f, 130 * k, sw, 8 * k, starPower / StarPowerSeconds, new Color(0.55f, 0.95f, 1f));
+        }
+
         // Hearts, top right, with the best score under them.
         var size = 40 * k;
         for (var i = 0; i < StartHearts; i++)
@@ -741,7 +830,7 @@ public sealed class UnicornPopGame : MonoBehaviour
             "W / S  fly forward / back        A / D  turn",
             "Space  jump, then flap (hold to glide)",
             "Shift  rainbow dash        Ctrl or C  dive",
-            "Golden balloons are worth 5 and never cost a heart. 3 hearts total.",
+            "Gold x5, rainbow chain-pops, heart heals, star = magnet. Avoid the grumpy storm balloons!",
         };
         for (var i = 0; i < lines.Length; i++)
         {
