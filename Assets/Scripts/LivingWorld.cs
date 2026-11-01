@@ -103,7 +103,7 @@ public sealed class LivingWorld : MonoBehaviour
             new Color(1f, 0.55f, 0.75f), new Color(1f, 0.85f, 0.35f), new Color(0.6f, 0.75f, 1f),
             new Color(0.8f, 0.6f, 1f), new Color(1f, 0.65f, 0.4f),
         };
-        for (var i = 0; i < 26; i++)
+        for (var i = 0; i < 40; i++)
         {
             var root = new GameObject("Butterfly").transform;
             root.SetParent(world, false);
@@ -123,7 +123,7 @@ public sealed class LivingWorld : MonoBehaviour
                 Root = root,
                 WingL = MagicWing(root, -1f, c, accent),
                 WingR = MagicWing(root, 1f, c, accent),
-                Home = new Vector3(Random.Range(-40f, 40f), Random.Range(1f, 4f), Random.Range(-20f, 50f)),
+                Home = new Vector3(Random.Range(-85f, 85f), Random.Range(1f, 4f), Random.Range(-165f, 50f)),
                 Phase = Random.Range(0f, 6.3f),
                 Dust = c,
             };
@@ -134,9 +134,9 @@ public sealed class LivingWorld : MonoBehaviour
 
     private void BuildFireflies(Transform world)
     {
-        for (var i = 0; i < 45; i++)
+        for (var i = 0; i < 110; i++)
         {
-            var home = new Vector3(Random.Range(-45f, 45f), Random.Range(0.8f, 5f), Random.Range(-22f, 55f));
+            var home = new Vector3(Random.Range(-88f, 88f), Random.Range(0.8f, 5f), Random.Range(-165f, 55f));
             var f = Prim.Make(PrimitiveType.Sphere, "Firefly", world, home, Vector3.one * 0.18f, Color.white);
             f.GetComponent<Renderer>().sharedMaterial = Glow(new Color(1f, 0.95f, 0.5f), 2.5f);
             fireflies.Add(f);

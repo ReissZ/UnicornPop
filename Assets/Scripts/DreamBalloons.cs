@@ -4,7 +4,7 @@ using UnityEngine;
 // Dream balloons float around the whole meadow, waiting to be found and popped. They never escape.
 public sealed class DreamBalloons : MonoBehaviour
 {
-    private const int Target = 22;
+    private const int Target = 55;
     private static Unicorn unicorn;
     private readonly List<Balloon> mine = new List<Balloon>();
     private float refill;
@@ -24,7 +24,9 @@ public sealed class DreamBalloons : MonoBehaviour
 
     private void Spawn()
     {
-        var p = new Vector3(Random.Range(-40f, 40f), Random.Range(3f, 26f), Random.Range(-20f, 48f));
+        var p = new Vector3(Random.Range(-85f, 85f), Random.Range(3f, 30f), Random.Range(-160f, 48f));
+        // A third of them form a trail along the route to the castle.
+        if (Random.value < 0.33f) p.x = Random.Range(-10f, 10f);
         // Don't pop one into existence on top of the unicorn.
         if ((p - unicorn.transform.position).sqrMagnitude < 100f) return;
         var r = Random.value;

@@ -290,14 +290,14 @@ public sealed partial class Dreamland : MonoBehaviour
         for (var i = 0; i < flowerMats.Length; i++) flowerMats[i] = Glow(flowerColors[i], 0.4f);
 
         var stem = new Color(0.3f, 0.6f, 0.3f);
-        for (var c = 0; c < 55; c++)
+        for (var c = 0; c < 170; c++)
         {
             float x, z;
             var tries = 0;
             do
             {
-                x = Random.Range(-48f, 48f);
-                z = Random.Range(-26f, 52f);
+                x = Random.Range(-88f, 88f);
+                z = Random.Range(-170f, 52f);
                 tries++;
             }
             while (tries < 20 && (Mathf.Abs(x - PathX(z)) < 3.2f || InPond(x, z, 2f)));
@@ -328,6 +328,10 @@ public sealed partial class Dreamland : MonoBehaviour
         BuildIsland(world, new Vector3(38f, 20f, 38f), 9f);
         BuildIsland(world, new Vector3(-22f, 24f, 66f), 13f);
         BuildIsland(world, new Vector3(24f, 15f, 8f), 7f);
+        BuildIsland(world, new Vector3(30f, 18f, -40f), 10f);
+        BuildIsland(world, new Vector3(-30f, 22f, -75f), 12f);
+        BuildIsland(world, new Vector3(34f, 17f, -105f), 9f);
+        BuildIsland(world, new Vector3(-36f, 20f, -135f), 11f);
     }
 
     private void BuildIsland(Transform world, Vector3 pos, float size)

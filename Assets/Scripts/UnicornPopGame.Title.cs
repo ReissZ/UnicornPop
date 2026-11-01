@@ -37,7 +37,7 @@ public sealed partial class UnicornPopGame
 
     private void EndTitle()
     {
-        unicorn.ResetTo(new Vector3(0, 0, -5f), 0f);
+        unicorn.ResetTo(new Vector3(0, 0, StartZ), 0f);
         jester.position = jesterHome;
         jester.localScale = Vector3.one;
         kingCheer = 0f;

@@ -349,8 +349,8 @@ public sealed class Unicorn : MonoBehaviour
         }
 
         var pos = transform.position + (hv + Vector3.up * vy) * dt;
-        pos.x = Mathf.Clamp(pos.x, -45f, 45f);
-        pos.z = Mathf.Clamp(pos.z, -25f, 50f);
+        pos.x = Mathf.Clamp(pos.x, -90f, 90f);
+        pos.z = Mathf.Clamp(pos.z, -165f, 50f);
         if (pos.y >= MaxHeight)
         {
             pos.y = MaxHeight;

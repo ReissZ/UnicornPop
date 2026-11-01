@@ -6,6 +6,10 @@ using UnityEngine.SceneManagement;
 public sealed partial class UnicornPopGame : MonoBehaviour
 {
     public const float CastleZ = 62f;
+    public const float StartZ = -150f;
+    // The cannon only fires, and the level clock only runs, once the unicorn is this close to the castle.
+    public const float EngageZ = -45f;
+    private bool engaged;
     public const float WallTopY = 9f;
     private const float CrateX = 14f;
 
@@ -114,7 +118,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
         unicorn = new GameObject("Unicorn").AddComponent<Unicorn>();
         unicorn.transform.SetParent(transform, false);
-        unicorn.Build(new Vector3(0, 0, -5f), 0f);
+        unicorn.Build(new Vector3(0, 0, StartZ), 0f);
         new GameObject("LivingWorld").AddComponent<LivingWorld>().Build(world, unicorn.transform, CastleZ);
 
         // Scenery is seeded for a stable look; gameplay randomness is not.
@@ -173,8 +177,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
         RenderSettings.fogColor = Dreamland.Horizon;
-        RenderSettings.fogStartDistance = 60f;
-        RenderSettings.fogEndDistance = 300f;
+        RenderSettings.fogStartDistance = 90f;
+        RenderSettings.fogEndDistance = 480f;
     }
 
     private void BuildCamera()
@@ -189,7 +193,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         cam.orthographic = false;
         cam.fieldOfView = 62f;
         cam.nearClipPlane = 0.3f;
-        cam.farClipPlane = 400f;
+        cam.farClipPlane = 600f;
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = Dreamland.Horizon;
     }
@@ -202,17 +206,17 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         for (var i = 0; i < 14; i++)
         {
             var side = i % 2 == 0 ? -1f : 1f;
-            var x = side * Random.Range(55f, 130f);
-            var z = Random.Range(-40f, 140f);
+            var x = side * Random.Range(95f, 170f);
+            var z = Random.Range(-200f, 140f);
             var r = Random.Range(18f, 40f);
             Prim.Make(PrimitiveType.Sphere, "Hill", world, new Vector3(x, -r * 0.55f, z), new Vector3(r * 2f, r * 1.2f, r * 2f), hillColors[i % 2]);
         }
 
-        for (var i = 0; i < 70; i++)
+        for (var i = 0; i < 200; i++)
         {
-            var x = Random.Range(-50f, 50f);
-            var z = Random.Range(-28f, 52f);
-            if (Mathf.Abs(x) < 5f && z > -10f) continue;
+            var x = Random.Range(-88f, 88f);
+            var z = Random.Range(-170f, 52f);
+            if (Mathf.Abs(x) < 6f) continue;
             var pos = new Vector3(x, 0, z);
             var yaw = Random.Range(0f, 360f);
             var scale = Random.Range(0.85f, 1.5f);
@@ -313,6 +317,10 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         var dark = new Color(0.62f, 0.58f, 0.74f);
         var roof = new Color(0.9f, 0.35f, 0.6f);
         var z = CastleZ;
+
+        // A faint light pillar so the castle can be seen from across the realm.
+        var beam = Prim.Make(PrimitiveType.Cylinder, "Beacon", castle, new Vector3(0, 70f, z + 4f), new Vector3(5f, 70f, 5f), Color.white);
+        beam.GetComponent<Renderer>().sharedMaterial = new Material(Shader.Find("Sprites/Default")) { color = new Color(1f, 0.85f, 1f, 0.2f) };
 
         Prim.Make(PrimitiveType.Cube, "Wall", castle, new Vector3(0, 4.5f, z - 4f), new Vector3(40f, 9f, 3f), stone);
         Prim.Make(PrimitiveType.Cube, "Walkway", castle, new Vector3(0, WallTopY - 0.2f, z - 4.4f), new Vector3(40f, 0.4f, 4f), dark);
@@ -466,6 +474,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             return;
         }
 
+        engaged = unicorn.transform.position.z > EngageZ;
+        cannon.Active = engaged;
         UpdateDifficulty();
         UpdatePowers();
         if (starPower > 0f)
@@ -489,7 +499,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     // Every LevelSeconds the cannon works faster, golden balloons get more common and balloons rise quicker.
     private void UpdateDifficulty()
     {
-        playTime += Time.deltaTime;
+        if (engaged) playTime += Time.deltaTime;
         var newLevel = 1 + Mathf.FloorToInt(playTime / LevelSeconds);
         if (newLevel != level)
         {
@@ -652,8 +662,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     {
         var kind = (PowerKind)Random.Range(0, 3);
         var pos = unicorn.transform.position + unicorn.Forward * Random.Range(10f, 18f) + Quaternion.Euler(0, 90f, 0) * unicorn.Forward * Random.Range(-9f, 9f);
-        pos.x = Mathf.Clamp(pos.x, -38f, 38f);
-        pos.z = Mathf.Clamp(pos.z, -15f, 45f);
+        pos.x = Mathf.Clamp(pos.x, -80f, 80f);
+        pos.z = Mathf.Clamp(pos.z, -160f, 45f);
         pos.y = Random.Range(4f, 14f);
         PowerUp.Spawn(transform, pos, kind);
     }
@@ -925,6 +935,38 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, unicorn.Dashing ? 78f : 62f, 1f - Mathf.Exp(-8f * dt));
     }
 
+    // An arrow at the screen edge points to the castle until the fight begins.
+    private void DrawCompass(float k)
+    {
+        var target = new Vector3(0f, 18f, CastleZ);
+        var dist = Vector3.Distance(unicorn.transform.position, target);
+        if (engaged && dist < 90f) return;
+
+        var sp = cam.WorldToScreenPoint(target);
+        var centre = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+        var p = new Vector2(sp.x, sp.y);
+        if (sp.z < 0f) p = centre - (p - centre);
+        var dir = p - centre;
+        if (dir.sqrMagnitude < 1f) dir = Vector2.up;
+        var margin = 60f * k;
+        var half = new Vector2(Screen.width * 0.5f - margin, Screen.height * 0.5f - margin);
+        var scale = Mathf.Min(half.x / Mathf.Max(0.01f, Mathf.Abs(dir.x)), half.y / Mathf.Max(0.01f, Mathf.Abs(dir.y)));
+        var pos = scale < 1f || sp.z < 0f ? centre + dir * Mathf.Min(scale, 1e6f) : p;
+        var gui = new Vector2(pos.x, Screen.height - pos.y);
+
+        var pulse = 0.75f + 0.25f * Mathf.Sin(Time.time * 4f);
+        var old = GUI.matrix;
+        var angle = Mathf.Atan2(-(pos.y - centre.y), pos.x - centre.x) * Mathf.Rad2Deg;
+        GUI.matrix = Matrix4x4.TRS(new Vector3(gui.x, gui.y, 0f), Quaternion.Euler(0, 0, angle), Vector3.one * k);
+        GUI.color = new Color(1f, 0.85f, 0.4f, pulse);
+        GUI.DrawTexture(new Rect(-26, -4, 34, 8), Texture2D.whiteTexture);
+        GUI.matrix *= Matrix4x4.TRS(new Vector3(8f, 0f, 0f), Quaternion.Euler(0, 0, 45f), Vector3.one);
+        GUI.DrawTexture(new Rect(-9, -9, 18, 18), Texture2D.whiteTexture);
+        GUI.color = Color.white;
+        GUI.matrix = old;
+        Shadowed(new Rect(gui.x - 100 * k, gui.y + 16 * k, 200 * k, 24 * k), "Castle  " + Mathf.RoundToInt(dist) + " m", scoreStyle, Mathf.RoundToInt(16 * k), new Color(1f, 0.9f, 0.5f));
+    }
+
     private void OnGUI()
     {
         var k = Screen.height / 720f;
@@ -948,6 +990,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
         GUI.Label(new Rect(12, 72, 200, 26), "Level " + level, hint);
         GUI.Label(new Rect(12, 92, 240, 26), "Dreams saved " + DreamSaver.Saved, hint);
+        DrawCompass(k);
         if (levelBanner > 0f)
         {
             Shadowed(new Rect(0, Screen.height * 0.3f, Screen.width, 70 * k), "Level " + level + " - faster!", bigStyle, Mathf.RoundToInt(54 * k), new Color(1f, 0.9f, 0.4f));
