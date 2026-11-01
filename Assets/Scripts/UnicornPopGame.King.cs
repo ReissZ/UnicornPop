@@ -14,6 +14,7 @@ public sealed partial class UnicornPopGame
     private readonly Color[] lockColors = new Color[3];
     private bool puzzleActive, puzzleDone;
     private int lockStep;
+    private float lockNudgeUntil;
 
     private int kingPhase;
     private float kingTimer;
@@ -89,14 +90,13 @@ public sealed partial class UnicornPopGame
             return true;
         }
 
-        effects.Burst(pos, new Color(0.4f, 0.3f, 0.5f), 16, 6f);
-        effects.Text(pos + Vector3.up * 2f, "Hee hee! Wrong order!", new Color(1f, 0.5f, 0.6f), 28);
-        Sfx.Boom();
-        GameFeel.Shake(0.4f);
-        kingGrump = 0.8f;
-        lockBalloons[b.PuzzleId] = null;
-        b.Pop();
-        SpawnLock();
+        // A wrong touch just bounces the balloon away, so an accidental bump never undoes your progress.
+        if (Time.time < lockNudgeUntil) return true;
+        lockNudgeUntil = Time.time + 1f;
+        effects.Burst(pos, new Color(0.4f, 0.3f, 0.5f), 12, 5f);
+        effects.Text(pos + Vector3.up * 2f, "Not yet! Pop number " + (lockStep + 1) + " first", new Color(1f, 0.7f, 0.5f), 26);
+        Sfx.Lose();
+        b.Kick((pos - unicorn.transform.position).normalized * 8f);
         return true;
     }
 
@@ -181,5 +181,19 @@ public sealed partial class UnicornPopGame
             }
         }
         GUI.color = Color.white;
+
+        // Big numbers float over the lock balloons so there is no guessing which to pop next.
+        var cam = Camera.main;
+        if (cam == null) return;
+        for (var i = 0; i < lockBalloons.Count; i++)
+        {
+            var b = lockBalloons[i];
+            if (b == null) continue;
+            var sp = cam.WorldToScreenPoint(b.transform.position + Vector3.up * 2.4f);
+            if (sp.z <= 0f) continue;
+            var step = lockOrder.IndexOf(i) + 1;
+            var next = step == lockStep + 1;
+            Shadowed(new Rect(sp.x - 40 * k, Screen.height - sp.y - 30 * k, 80 * k, 60 * k), step.ToString(), bigStyle, Mathf.RoundToInt((next ? 64 : 40) * k), next ? new Color(1f, 0.95f, 0.3f) : new Color(1f, 1f, 1f, 0.7f));
+        }
     }
 }

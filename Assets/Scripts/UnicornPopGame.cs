@@ -485,7 +485,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
         if (realmCleared) UpdateRealmCleared();
         engaged = unicorn.transform.position.z > EngageZ;
-        cannon.Active = engaged && !realmCleared;
+        cannon.Active = engaged && !realmCleared && !puzzleActive;
         UpdateDifficulty();
         UpdatePowers();
         if (starPower > 0f)
