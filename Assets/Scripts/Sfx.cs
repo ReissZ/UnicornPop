@@ -6,7 +6,7 @@ public sealed class Sfx : MonoBehaviour
     public static Sfx Instance { get; private set; }
 
     private AudioSource source;
-    private AudioClip pop, golden, boom, flap, hoof, jump, dash, lose, gameOver, start, record;
+    private AudioClip pop, golden, boom, flap, hoof, jump, dash, lose, gameOver, start, record, saved;
 
     private void Awake()
     {
@@ -24,6 +24,8 @@ public sealed class Sfx : MonoBehaviour
         gameOver = Clip(1.2f, (t, n) => Tone(t, t < 0.4f ? 392f : t < 0.8f ? 330f : 262f) * 0.4f * Mathf.Exp(-(t % 0.4f) * 4f));
         start = Clip(0.5f, (t, n) => Tone(t, t < 0.17f ? 523f : t < 0.34f ? 659f : 784f) * 0.4f * Mathf.Exp(-(t % 0.17f) * 7f));
         record = Clip(1.0f, (t, n) => (Tone(t, 659f + Mathf.Floor(t / 0.125f) * 110f) * 0.35f) * Mathf.Exp(-(t % 0.125f) * 9f));
+        // A bright little bell: the dream is safe.
+        saved = Clip(0.5f, (t, n) => (Tone(t, 1568f) * 0.5f + Tone(t, 2093f) * 0.35f + Tone(t, 3136f) * 0.12f) * Mathf.Min(t / 0.004f, 1f) * Mathf.Exp(-t * 7f));
     }
 
     private void OnDestroy()
@@ -64,5 +66,6 @@ public sealed class Sfx : MonoBehaviour
     public static void Lose() => Instance?.Play(Instance.lose, 0.7f);
     public static void GameOver() => Instance?.Play(Instance.gameOver, 0.7f);
     public static void Start() => Instance?.Play(Instance.start, 0.7f);
+    public static void Saved(float pitch) => Instance?.Play(Instance.saved, 0.35f, pitch);
     public static void Record() => Instance?.Play(Instance.record, 0.7f);
 }

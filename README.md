@@ -19,6 +19,16 @@ A Unity 6 (6000.6.7f1) 3D game, built in small testable batches. A winged unicor
 
 Flaps use stamina (blue bar); the dash cooldown is the yellow bar.
 
+## Story
+
+Dreamland runs on happy wishes. Every wish becomes a balloon, and a balloon is meant to float up and pop into sparkles, which keeps the rainbow lit, the fireflies glowing, the islands floating and the sky changing colour.
+
+- **The unicorn (Pip):** the kingdom's last Wish-Popper. Her golden horn is the only thing that can pop a wish without hurting it, so the dream inside is released and saved. She is brave, a bit clumsy and easily shocked. Her rainbow dash is old magic.
+- **The king (King Bartholomew the Worried):** a good ruler who fusses. A wish that escapes into the sky takes some of Dreamland's magic with it, so he stomps when one gets away. He is secretly lonely, and the grimacing grin is him trying not to look delighted.
+- **The jester (Jingles):** the royal Wish-Launcher. His cannon sends wishes up so they can be popped. He is not the villain, just an over-enthusiastic coach who speeds up when you do well.
+- **The balloons:** normal balloons are unpopped wishes. Hearts are the kingdom's courage, gold and star balloons are rare wishes, storm balloons are wishes gone sour, and the crowned boss is a cranky wish nobody has made in a hundred years.
+- **Possible twist:** the boss holds the very first wish that made Dreamland, and the king made it because he wished for a friend.
+
 ## Progress
 
 - [x] Batch 1: 3D world, castle, jester, cannon, flying unicorn with chase camera

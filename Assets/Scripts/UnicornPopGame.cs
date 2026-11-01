@@ -98,6 +98,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         gameObject.AddComponent<Sfx>();
         gameObject.AddComponent<Music>();
         feel = gameObject.AddComponent<GameFeel>();
+        gameObject.AddComponent<DreamSaver>();
         heartTex = MakeHeart();
         Balloon.Escaped += OnBalloonEscaped;
 
@@ -127,6 +128,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         unicorn.Controllable = !onTitle;
         cannon.Active = !onTitle;
         GameFeel.Setup(cam, unicorn);
+        DreamSaver.Setup(unicorn);
         BeginTitle();
         SnapCamera();
     }
@@ -724,6 +726,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         }
         boss = null;
         Music.SetBoss(false);
+        DreamSaver.Release(pos, b.Color, true);
         b.Pop();
     }
 
@@ -807,6 +810,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         if (special) Sfx.Golden(); else Sfx.Pop(combo);
         GameFeel.Shake(special ? 0.3f : 0.1f + combo * 0.02f);
         if (special || combo >= 4) kingCheer = 0.8f;
+        DreamSaver.Release(pos, b.Color);
         b.Pop();
     }
 
@@ -941,6 +945,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         DrawBar(12, 58, 160, 8, unicorn.DashReady01, new Color(1f, 0.85f, 0.3f));
 
         GUI.Label(new Rect(12, 72, 200, 26), "Level " + level, hint);
+        GUI.Label(new Rect(12, 92, 240, 26), "Dreams saved " + DreamSaver.Saved, hint);
         if (levelBanner > 0f)
         {
             Shadowed(new Rect(0, Screen.height * 0.3f, Screen.width, 70 * k), "Level " + level + " - faster!", bigStyle, Mathf.RoundToInt(54 * k), new Color(1f, 0.9f, 0.4f));
