@@ -184,6 +184,7 @@ public sealed class Unicorn : MonoBehaviour
 
         var turn = 0f;
         var throttle = 0f;
+        var strafe = 0f;
         var spaceDown = false;
         var spaceHeld = false;
         var dive = false;
@@ -198,6 +199,17 @@ public sealed class Unicorn : MonoBehaviour
             spaceHeld = Input.GetKey(KeyCode.Space);
             dive = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
             dashPressed = Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift);
+
+            // Gamepad: left stick walks and strafes, right stick turns.
+            turn = Mathf.Clamp(turn + Pad.LookX, -1f, 1f);
+            var padY = Pad.MoveY;
+            if (padY > 0f) throttle = Mathf.Max(throttle, padY);
+            else if (padY < 0f && throttle <= 0f) throttle = padY * 0.4f;
+            strafe = Pad.MoveX;
+            spaceDown |= Pad.JumpDown;
+            spaceHeld |= Pad.JumpHeld;
+            dive |= Pad.DiveHeld;
+            dashPressed |= Pad.DashDown;
         }
 
         yaw += turn * (grounded ? 130f : 150f) * dt;
@@ -228,7 +240,9 @@ public sealed class Unicorn : MonoBehaviour
             targetSpeed = throttle * (grounded ? GroundSpeed : AirSpeed);
             response = grounded ? 10f : 3f;
         }
-        hv = Vector3.Lerp(hv, fwd * targetSpeed, 1f - Mathf.Exp(-response * dt));
+        var wanted = fwd * targetSpeed;
+        if (dashT <= 0f) wanted += Quaternion.Euler(0, 90f, 0) * fwd * (strafe * (grounded ? GroundSpeed : AirSpeed) * 0.7f);
+        hv = Vector3.Lerp(hv, wanted, 1f - Mathf.Exp(-response * dt));
 
         if (spaceDown)
         {

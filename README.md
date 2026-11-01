@@ -15,6 +15,8 @@ A Unity 6 (6000.6.7f1) 3D game, built in small testable batches. A winged unicor
 | Shift | Dash |
 | Ctrl or C | Dive |
 
+**Gamepad (Xbox / PS5):** left stick walks and strafes, right stick turns, A/Cross jumps and flaps, right bumper dashes, left bumper dives, Start restarts.
+
 Flaps use stamina (blue bar); the dash cooldown is the yellow bar.
 
 ## Progress

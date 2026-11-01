@@ -400,7 +400,7 @@ public sealed class UnicornPopGame : MonoBehaviour
 
         if (onTitle)
         {
-            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0))
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetMouseButtonDown(0) || Pad.JumpDown || Pad.StartDown)
             {
                 StartGame();
             }
@@ -415,7 +415,7 @@ public sealed class UnicornPopGame : MonoBehaviour
 
         if (gameOver)
         {
-            if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Return))
+            if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Return) || Pad.JumpDown || Pad.StartDown)
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
