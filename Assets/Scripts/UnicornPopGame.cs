@@ -34,6 +34,8 @@ public sealed class UnicornPopGame : MonoBehaviour
     private float playTime;
     private float levelBanner;
     private Dreamland dreamland;
+    private GameFeel feel;
+    private bool wasDashing;
     private Transform king;
     private Transform kingArmL, kingArmR;
     private float kingCheer, kingGrump;
@@ -90,6 +92,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         effects.transform.SetParent(transform, false);
         gameObject.AddComponent<Sfx>();
         gameObject.AddComponent<Music>();
+        feel = gameObject.AddComponent<GameFeel>();
         heartTex = MakeHeart();
         Balloon.Escaped += OnBalloonEscaped;
 
@@ -118,6 +121,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         onTitle = !skipTitle;
         unicorn.Controllable = !onTitle;
         cannon.Active = !onTitle;
+        GameFeel.Setup(cam, unicorn);
         SnapCamera();
     }
 
@@ -667,6 +671,8 @@ public sealed class UnicornPopGame : MonoBehaviour
         var pos = b.transform.position;
         var away = (pos - unicorn.transform.position).normalized;
         b.Hit(away);
+        GameFeel.Shake(0.55f);
+        GameFeel.Freeze(0.07f);
         effects.Burst(pos, b.Color, 18, 7f);
         Sfx.Pop(combo + 3);
 
@@ -683,6 +689,8 @@ public sealed class UnicornPopGame : MonoBehaviour
         effects.Burst(pos, b.Color, 50, 12f, 1.2f);
         effects.Text(pos + Vector3.up * 3f, "BOSS DEFEATED +" + bonus, new Color(1f, 0.9f, 0.3f), 44);
         Sfx.Record();
+        GameFeel.Shake(1f);
+        GameFeel.Freeze(0.18f);
         kingCheer = 2f;
         if (hearts < StartHearts) hearts++;
         // The boss drops a couple of power-ups where it popped.
@@ -712,6 +720,7 @@ public sealed class UnicornPopGame : MonoBehaviour
             effects.Burst(pos, new Color(1f, 0.95f, 0.3f), 30, 9f, 0.5f);
             effects.Burst(pos, new Color(0.45f, 0.35f, 0.6f), 20, 6f);
             Sfx.Boom();
+            GameFeel.Shake(0.8f);
             b.Pop();
             LoseHeart(pos, "Zap!");
             return;
@@ -772,6 +781,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         if (label.Length > 0) effects.Text(pos + Vector3.up * 3.4f, label, textColor, 30);
         if (combo >= 2) effects.Text(pos + Vector3.up * 2.2f, "COMBO x" + combo, new Color(1f, 0.6f, 0.85f), 22);
         if (special) Sfx.Golden(); else Sfx.Pop(combo);
+        GameFeel.Shake(special ? 0.3f : 0.1f + combo * 0.02f);
         if (special || combo >= 4) kingCheer = 0.8f;
         b.Pop();
     }
@@ -795,6 +805,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     {
         if (gameOver) return;
         hearts--;
+        GameFeel.Shake(0.7f);
         effects.Text(pos, text, new Color(1f, 0.4f, 0.4f), 26);
         kingGrump = 0.9f;
         if (hearts > 0)
@@ -854,7 +865,11 @@ public sealed class UnicornPopGame : MonoBehaviour
 
     private void LateUpdate()
     {
+        feel.BeginCamera();
         FollowCamera(Time.deltaTime);
+        if (!onTitle && unicorn.Dashing && !wasDashing) GameFeel.Shake(0.3f);
+        wasDashing = unicorn.Dashing;
+        feel.EndCamera();
     }
 
     private void SnapCamera() => FollowCamera(10f);
@@ -916,6 +931,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         }
 
         // Score and combo, top centre.
+        Rounded(new Rect(Screen.width * 0.5f - 110 * k, 6 * k, 220 * k, 58 * k), new Color(0.75f, 0.6f, 0.95f, 0.28f));
         Shadowed(new Rect(0, 6 * k, Screen.width, 60 * k), score.ToString(), scoreStyle, Mathf.RoundToInt(46 * k), Color.white);
         if (combo >= 2)
         {
@@ -1003,7 +1019,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     private static void Shadowed(Rect r, string text, GUIStyle style, int size, Color color)
     {
         style.fontSize = size;
-        GUI.color = new Color(0, 0, 0, 0.6f);
+        GUI.color = new Color(0.3f, 0.15f, 0.45f, 0.6f);
         GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), text, style);
         GUI.color = color;
         GUI.Label(r, text, style);
@@ -1019,13 +1035,16 @@ public sealed class UnicornPopGame : MonoBehaviour
         y += 42 * k;
     }
 
+    private static void Rounded(Rect r, Color color)
+    {
+        var radius = r.height * 0.5f;
+        GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, color, Vector4.zero, new Vector4(radius, radius, radius, radius));
+    }
+
     private static void DrawBar(float x, float y, float w, float h, float fill, Color color)
     {
-        var old = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, 0.45f);
-        GUI.DrawTexture(new Rect(x, y, w, h), Texture2D.whiteTexture);
-        GUI.color = color;
-        GUI.DrawTexture(new Rect(x + 1, y + 1, (w - 2) * Mathf.Clamp01(fill), h - 2), Texture2D.whiteTexture);
-        GUI.color = old;
+        Rounded(new Rect(x, y, w, h), new Color(0.3f, 0.18f, 0.45f, 0.4f));
+        var fw = (w - 2) * Mathf.Clamp01(fill);
+        if (fw > h - 2) Rounded(new Rect(x + 1, y + 1, fw, h - 2), color);
     }
 }

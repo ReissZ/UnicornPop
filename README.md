@@ -32,6 +32,6 @@ Flaps use stamina (blue bar); the dash cooldown is the yellow bar.
 - [x] Batch 9: power-ups and a giant boss balloon
 - [x] Batch 10: level themes (sunset, night, candy clouds, aurora) with level banners
 - [x] Batch 11: dreamy procedural music and ambience
-- [ ] Batch 12: game feel (screen shake, slow-mo, speed lines, hoofprints, pastel HUD)
+- [x] Batch 12: game feel (screen shake, slow-mo, speed lines, hoofprints, pastel HUD)
 
 All models are built from Unity primitives in code, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).
