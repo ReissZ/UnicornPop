@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum BalloonKind { Normal, Golden, Rainbow, Heart, Star, Storm }
+public enum BalloonKind { Normal, Golden, Rainbow, Heart, Star, Storm, Boss }
 
 // A balloon launched from the cannon. Air drag turns the throw into a slow float that eventually leaves the sky.
 public sealed class Balloon : MonoBehaviour
@@ -19,6 +19,11 @@ public sealed class Balloon : MonoBehaviour
     // Multiplies how fast balloons rise; the game raises it over time.
     public static float RiseScale = 1f;
 
+    // Slow motion power-up: scales how fast balloons move.
+    public static float TimeScale = 1f;
+
+    public const float BossScale = 3.4f;
+
     public static readonly Color Gold = new Color(1f, 0.82f, 0.2f);
 
     private static readonly Color[] Palette =
@@ -34,6 +39,9 @@ public sealed class Balloon : MonoBehaviour
     private Vector3 vel;
     private Vector3 drift;
     private float phase;
+    private float punch;
+    public int Hp = 1;
+    public int MaxHp = 1;
 
     public BalloonKind Kind { get; private set; }
     public bool Golden => Kind == BalloonKind.Golden;
@@ -48,6 +56,7 @@ public sealed class Balloon : MonoBehaviour
             case BalloonKind.Heart: return new Color(1f, 0.25f, 0.4f);
             case BalloonKind.Star: return new Color(0.5f, 0.92f, 1f);
             case BalloonKind.Storm: return new Color(0.32f, 0.26f, 0.42f);
+            case BalloonKind.Boss: return new Color(0.95f, 0.45f, 0.85f);
             default: return RandomColor();
         }
     }
@@ -87,6 +96,25 @@ public sealed class Balloon : MonoBehaviour
                 }
                 Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.25f, 0.25f, -0.4f), new Vector3(0.25f, 0.3f, 0.15f), white);
                 knotY = -1.15f;
+                break;
+            case BalloonKind.Boss:
+                Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.7f, 1.95f, 1.7f), color);
+                Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.4f, 0.45f, -0.62f), new Vector3(0.3f, 0.45f, 0.2f), white);
+                for (var i = -1; i <= 1; i++)
+                {
+                    Prim.Cone("CrownSpike", root, new Vector3(i * 0.38f, 1.12f - Mathf.Abs(i) * 0.08f, 0), new Vector3(0.3f, 0.5f, 0.3f), new Color(1f, 0.82f, 0.2f), new Vector3(0, 0, -i * 14f));
+                }
+                Prim.Make(PrimitiveType.Cylinder, "CrownBand", root, new Vector3(0, 0.95f, 0), new Vector3(1.05f, 0.1f, 1.05f), new Color(1f, 0.82f, 0.2f));
+                foreach (var sd in new[] { -1f, 1f })
+                {
+                    Prim.Make(PrimitiveType.Sphere, "Eye", root, new Vector3(0.38f * sd, 0.25f, -0.72f), new Vector3(0.4f, 0.46f, 0.2f), white);
+                    Prim.Make(PrimitiveType.Sphere, "Pupil", root, new Vector3(0.36f * sd, 0.2f, -0.83f), new Vector3(0.18f, 0.22f, 0.12f), new Color(0.15f, 0.05f, 0.25f));
+                    Prim.Make(PrimitiveType.Cube, "Brow", root, new Vector3(0.38f * sd, 0.62f, -0.74f), new Vector3(0.5f, 0.1f, 0.08f), new Color(0.3f, 0.1f, 0.4f), new Vector3(0, 0, -22f * sd));
+                    Prim.Make(PrimitiveType.Sphere, "Cheek", root, new Vector3(0.58f * sd, -0.12f, -0.64f), new Vector3(0.28f, 0.18f, 0.1f), new Color(1f, 0.65f, 0.8f));
+                }
+                Prim.Make(PrimitiveType.Sphere, "Grin", root, new Vector3(0, -0.28f, -0.8f), new Vector3(0.55f, 0.2f, 0.1f), new Color(0.3f, 0.05f, 0.25f));
+                Prim.Make(PrimitiveType.Cube, "Tooth", root, new Vector3(0, -0.2f, -0.86f), new Vector3(0.14f, 0.1f, 0.04f), white);
+                knotY = -1.05f;
                 break;
             case BalloonKind.Storm:
                 Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.7f, 1.9f, 1.7f), color);
@@ -139,7 +167,7 @@ public sealed class Balloon : MonoBehaviour
 
     private void Update()
     {
-        var dt = Time.deltaTime;
+        var dt = Time.deltaTime * TimeScale;
         vel = Vector3.Lerp(vel, drift, 1f - Mathf.Exp(-Drag * dt));
         transform.position += vel * dt;
         transform.rotation = Quaternion.Euler(Mathf.Sin(Time.time * 1.7f + phase) * 7f, 0, Mathf.Cos(Time.time * 1.3f + phase) * 7f);
@@ -154,11 +182,26 @@ public sealed class Balloon : MonoBehaviour
         }
         if (Kind == BalloonKind.Heart) transform.localScale = Vector3.one * (1f + Mathf.Sin(Time.time * 6f + phase) * 0.06f);
 
+        if (Kind == BalloonKind.Boss)
+        {
+            punch = Mathf.Max(0f, punch - Time.deltaTime * 3f);
+            transform.localScale = Vector3.one * (BossScale * (1f + punch * 0.18f + Mathf.Sin(Time.time * 2.2f) * 0.03f));
+        }
+
         if (transform.position.y > EscapeHeight)
         {
             Escaped?.Invoke(this);
             Pop();
         }
+    }
+
+    public void SetDrift(Vector3 d) => drift = d;
+
+    // The boss squashes and is shoved away from the horn when it takes a hit.
+    public void Hit(Vector3 dir)
+    {
+        punch = 1f;
+        vel += dir * 5f;
     }
 
     // Drawn toward a point (the star magnet) without fighting the drift physics.

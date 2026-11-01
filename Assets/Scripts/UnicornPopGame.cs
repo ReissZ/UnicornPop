@@ -24,6 +24,9 @@ public sealed class UnicornPopGame : MonoBehaviour
     private const int MaxCombo = 8;
     private const float ComboWindow = 2.2f;
     private const float StarPowerSeconds = 6f;
+    private const float RainbowPowerSeconds = 8f;
+    private const float SlowPowerSeconds = 6f;
+    private const float BoostPowerSeconds = 8f;
     private const float HitRadius = 1.3f;
 
     private const float LevelSeconds = 20f;
@@ -40,6 +43,11 @@ public sealed class UnicornPopGame : MonoBehaviour
     private bool newRecord;
     private int hearts = StartHearts;
     private float starPower;
+    private float rainbowPower, slowPower, boostPower;
+    private float nextPowerUp = 10f;
+    private Balloon boss;
+    private float bossHitCooldown;
+    private int bossLevel;
     private int combo;
     private float comboTimer;
     private bool gameOver;
@@ -120,6 +128,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         onTitle = false;
         skipTitle = true;
         Balloon.RiseScale = 1f;
+        Balloon.TimeScale = 1f;
         cannon.Active = true;
         startFrame = Time.frameCount;
         Sfx.Start();
@@ -426,13 +435,14 @@ public sealed class UnicornPopGame : MonoBehaviour
         }
 
         UpdateDifficulty();
+        UpdatePowers();
         if (starPower > 0f)
         {
             starPower -= Time.deltaTime;
             var center = unicorn.transform.position + Vector3.up * 1.8f;
             foreach (var bl in Balloon.Active)
             {
-                if (bl.Kind != BalloonKind.Storm) bl.Pull(center, 16f, 9f, Time.deltaTime);
+                if (bl.Kind != BalloonKind.Storm && bl.Kind != BalloonKind.Boss) bl.Pull(center, 16f, 9f, Time.deltaTime);
             }
         }
 
@@ -456,9 +466,14 @@ public sealed class UnicornPopGame : MonoBehaviour
             Sfx.Start();
             effects.Text(unicorn.transform.position + Vector3.up * 4f, "Level " + level + "!", new Color(1f, 0.9f, 0.4f), 40);
             kingCheer = 1.2f;
+            if (level % 3 == 0 && level > bossLevel && boss == null)
+            {
+                bossLevel = level;
+                SpawnBoss();
+            }
         }
         var d = level - 1;
-        cannon.Tempo = Mathf.Min(2.2f, 1f + d * 0.12f);
+        cannon.Tempo = Mathf.Min(2.2f, 1f + d * 0.12f) * (slowPower > 0f ? 0.5f : 1f) * (boss != null ? 0.6f : 1f);
         cannon.GoldenChance = Mathf.Min(0.25f, 0.12f + d * 0.015f);
         cannon.DoubleChance = Mathf.Clamp01((d - 2) * 0.08f);
         cannon.RainbowChance = level >= 2 ? 0.05f : 0f;
@@ -542,6 +557,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         var prev = hasPrevTip ? prevTip : tip;
         prevTip = tip;
         hasPrevTip = true;
+        bossHitCooldown -= Time.deltaTime;
 
         for (var i = Balloon.Active.Count - 1; i >= 0; i--)
         {
@@ -549,11 +565,125 @@ public sealed class UnicornPopGame : MonoBehaviour
             if (i >= Balloon.Active.Count) continue;
             var b = Balloon.Active[i];
             var c = b.transform.position;
-            if (SegmentDistance(c, root, tip) < HitRadius || SegmentDistance(c, prev, tip) < HitRadius)
+            var reach = HitRadius + (b.Kind == BalloonKind.Boss ? 2.4f : 0f);
+            var hit = SegmentDistance(c, root, tip) < reach || SegmentDistance(c, prev, tip) < reach;
+
+            // The rainbow trail pops anything it passes through.
+            if (!hit && rainbowPower > 0f)
             {
-                PopBalloon(b);
+                var pts = unicorn.TrailPoints;
+                for (var p = 0; p < pts.Count && !hit; p++) hit = Vector3.Distance(c, pts[p]) < 1.7f + (b.Kind == BalloonKind.Boss ? 2.4f : 0f);
             }
+            if (!hit) continue;
+
+            if (b.Kind == BalloonKind.Boss) HitBoss(b);
+            else PopBalloon(b);
         }
+    }
+
+    // ---------- Power-ups and the boss ----------
+
+    private void UpdatePowers()
+    {
+        var dt = Time.deltaTime;
+        rainbowPower = Mathf.Max(0f, rainbowPower - dt);
+        slowPower = Mathf.Max(0f, slowPower - dt);
+        boostPower = Mathf.Max(0f, boostPower - dt);
+        unicorn.RainbowTrail = rainbowPower > 0f;
+        unicorn.WingBoost = boostPower > 0f;
+        Balloon.TimeScale = slowPower > 0f ? 0.45f : 1f;
+
+        nextPowerUp -= dt;
+        if (nextPowerUp <= 0f)
+        {
+            nextPowerUp = Random.Range(12f, 18f);
+            if (PowerUp.Active.Count < 2) SpawnPowerUp();
+        }
+
+        var center = unicorn.transform.position + Vector3.up * 1.5f;
+        for (var i = PowerUp.Active.Count - 1; i >= 0; i--)
+        {
+            var p = PowerUp.Active[i];
+            if (Vector3.Distance(p.transform.position, center) > PowerUp.PickupRadius) continue;
+            Collect(p);
+        }
+    }
+
+    private void SpawnPowerUp()
+    {
+        var kind = (PowerKind)Random.Range(0, 3);
+        var pos = unicorn.transform.position + unicorn.Forward * Random.Range(10f, 18f) + Quaternion.Euler(0, 90f, 0) * unicorn.Forward * Random.Range(-9f, 9f);
+        pos.x = Mathf.Clamp(pos.x, -38f, 38f);
+        pos.z = Mathf.Clamp(pos.z, -15f, 45f);
+        pos.y = Random.Range(4f, 14f);
+        PowerUp.Spawn(transform, pos, kind);
+    }
+
+    private void Collect(PowerUp p)
+    {
+        var pos = p.transform.position;
+        var color = PowerUp.KindColor(p.Kind);
+        switch (p.Kind)
+        {
+            case PowerKind.RainbowTrail: rainbowPower = RainbowPowerSeconds; break;
+            case PowerKind.SlowMo: slowPower = SlowPowerSeconds; break;
+            default: boostPower = BoostPowerSeconds; break;
+        }
+        effects.Burst(pos, color, 30, 9f);
+        effects.Text(pos + Vector3.up * 1.5f, PowerUp.KindName(p.Kind), color, 32);
+        Sfx.Golden();
+        kingCheer = 0.8f;
+        p.Collect();
+    }
+
+    private void SpawnBoss()
+    {
+        var from = new Vector3(Random.Range(-8f, 8f), 12f, CastleZ - 14f);
+        var flat = unicorn.transform.position - from;
+        flat.y = 0;
+        flat = flat.normalized;
+        boss = Balloon.Spawn(transform, from, Vector3.zero, BalloonKind.Boss, Balloon.KindColor(BalloonKind.Boss));
+        boss.transform.localScale = Vector3.one * Balloon.BossScale;
+        boss.Hp = boss.MaxHp = 5 + level / 3;
+        boss.SetDrift(flat * 1.4f + Vector3.up * 0.7f);
+        effects.Text(unicorn.transform.position + unicorn.Forward * 6f + Vector3.up * 4f, "BOSS BALLOON!", new Color(1f, 0.5f, 0.85f), 44);
+        Sfx.Start();
+        kingGrump = 0.9f;
+    }
+
+    private void HitBoss(Balloon b)
+    {
+        if (bossHitCooldown > 0f) return;
+        bossHitCooldown = 0.5f;
+        b.Hp--;
+        var pos = b.transform.position;
+        var away = (pos - unicorn.transform.position).normalized;
+        b.Hit(away);
+        effects.Burst(pos, b.Color, 18, 7f);
+        Sfx.Pop(combo + 3);
+
+        if (b.Hp > 0)
+        {
+            effects.Text(pos + Vector3.up * 3f, b.Hp + " left", Color.white, 28);
+            return;
+        }
+
+        var bonus = 50;
+        score += bonus;
+        effects.Burst(pos, Color.white, 60, 14f, 1.2f);
+        effects.Burst(pos, new Color(1f, 0.82f, 0.2f), 50, 10f, 1.2f);
+        effects.Burst(pos, b.Color, 50, 12f, 1.2f);
+        effects.Text(pos + Vector3.up * 3f, "BOSS DEFEATED +" + bonus, new Color(1f, 0.9f, 0.3f), 44);
+        Sfx.Record();
+        kingCheer = 2f;
+        if (hearts < StartHearts) hearts++;
+        // The boss drops a couple of power-ups where it popped.
+        for (var i = 0; i < 2; i++)
+        {
+            PowerUp.Spawn(transform, pos + new Vector3((i - 0.5f) * 5f, 0f, 0f), (PowerKind)Random.Range(0, 3));
+        }
+        boss = null;
+        b.Pop();
     }
 
     private static float SegmentDistance(Vector3 p, Vector3 a, Vector3 b)
@@ -596,7 +726,7 @@ public sealed class UnicornPopGame : MonoBehaviour
                 for (var i = Balloon.Active.Count - 1; i >= 0; i--)
                 {
                     var o = Balloon.Active[i];
-                    if (o == b || o.Kind == BalloonKind.Storm || Vector3.Distance(o.transform.position, pos) > 14f) continue;
+                    if (o == b || o.Kind == BalloonKind.Storm || o.Kind == BalloonKind.Boss || Vector3.Distance(o.transform.position, pos) > 14f) continue;
                     points += combo;
                     effects.Burst(o.transform.position, o.Color, 14, 5f);
                     o.Pop();
@@ -639,6 +769,13 @@ public sealed class UnicornPopGame : MonoBehaviour
 
     private void OnBalloonEscaped(Balloon b)
     {
+        if (b.Kind == BalloonKind.Boss)
+        {
+            boss = null;
+            LoseHeart(b.transform.position, "The boss got away!");
+            LoseHeart(b.transform.position + Vector3.up * 2f, "Ouch!");
+            return;
+        }
         // Only ordinary balloons count against you; bonus and storm balloons can float away.
         if (gameOver || b.Kind != BalloonKind.Normal) return;
         LoseHeart(b.transform.position, "Escaped!");
@@ -657,7 +794,8 @@ public sealed class UnicornPopGame : MonoBehaviour
         }
 
         gameOver = true;
-        starPower = 0f;
+        starPower = rainbowPower = slowPower = boostPower = 0f;
+        Balloon.TimeScale = 1f;
         cannon.Active = false;
         if (score > best)
         {
@@ -773,11 +911,17 @@ public sealed class UnicornPopGame : MonoBehaviour
             DrawBar(Screen.width * 0.5f - w * 0.5f, 94 * k, w, 8 * k, comboTimer / ComboWindow, new Color(1f, 0.6f, 0.85f));
         }
 
-        if (starPower > 0f)
+        var barY = 104 * k;
+        DrawPower("Star power", starPower, StarPowerSeconds, new Color(0.55f, 0.95f, 1f), ref barY, k);
+        DrawPower("Rainbow trail", rainbowPower, RainbowPowerSeconds, new Color(1f, 0.55f, 0.85f), ref barY, k);
+        DrawPower("Slow motion", slowPower, SlowPowerSeconds, new Color(0.45f, 0.7f, 1f), ref barY, k);
+        DrawPower("Wing boost", boostPower, BoostPowerSeconds, new Color(1f, 0.85f, 0.3f), ref barY, k);
+
+        if (boss != null && !gameOver)
         {
-            var sw = 160 * k;
-            Shadowed(new Rect(0, 104 * k, Screen.width, 24 * k), "Star power", scoreStyle, Mathf.RoundToInt(18 * k), new Color(0.55f, 0.95f, 1f));
-            DrawBar(Screen.width * 0.5f - sw * 0.5f, 130 * k, sw, 8 * k, starPower / StarPowerSeconds, new Color(0.55f, 0.95f, 1f));
+            var bw = 360 * k;
+            Shadowed(new Rect(0, Screen.height - 74 * k, Screen.width, 30 * k), "BOSS BALLOON", scoreStyle, Mathf.RoundToInt(22 * k), new Color(1f, 0.55f, 0.85f));
+            DrawBar(Screen.width * 0.5f - bw * 0.5f, Screen.height - 42 * k, bw, 16 * k, boss.Hp / (float)boss.MaxHp, new Color(1f, 0.45f, 0.75f));
         }
 
         // Hearts, top right, with the best score under them.
@@ -831,10 +975,11 @@ public sealed class UnicornPopGame : MonoBehaviour
             "Space  jump, then flap (hold to glide)",
             "Shift  rainbow dash        Ctrl or C  dive",
             "Gold x5, rainbow chain-pops, heart heals, star = magnet. Avoid the grumpy storm balloons!",
+            "Fly into glowing orbs for power-ups. Beat the crowned boss balloon with several hits!",
         };
         for (var i = 0; i < lines.Length; i++)
         {
-            Shadowed(new Rect(0, Screen.height - 150 * k + i * 26 * k, Screen.width, 26 * k), lines[i], midStyle, Mathf.RoundToInt(18 * k), Color.white);
+            Shadowed(new Rect(0, Screen.height - 160 * k + i * 26 * k, Screen.width, 26 * k), lines[i], midStyle, Mathf.RoundToInt(18 * k), Color.white);
         }
         if (best > 0)
         {
@@ -850,6 +995,15 @@ public sealed class UnicornPopGame : MonoBehaviour
         GUI.color = color;
         GUI.Label(r, text, style);
         GUI.color = Color.white;
+    }
+
+    private void DrawPower(string label, float left, float total, Color color, ref float y, float k)
+    {
+        if (left <= 0f) return;
+        var w = 160 * k;
+        Shadowed(new Rect(0, y, Screen.width, 24 * k), label, scoreStyle, Mathf.RoundToInt(18 * k), color);
+        DrawBar(Screen.width * 0.5f - w * 0.5f, y + 26 * k, w, 8 * k, left / total, color);
+        y += 42 * k;
     }
 
     private static void DrawBar(float x, float y, float w, float h, float fill, Color color)

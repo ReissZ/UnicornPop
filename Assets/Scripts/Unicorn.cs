@@ -58,6 +58,13 @@ public sealed class Unicorn : MonoBehaviour
     public Transform HornBase { get; private set; }
     public float Stamina01 => stamina / MaxStamina;
     public float DashReady01 => 1f - Mathf.Clamp01(dashCd / DashCooldown);
+    // Power-ups, switched on and off by the game.
+    public bool WingBoost;
+    public bool RainbowTrail;
+    private readonly List<Vector3> trail = new List<Vector3>();
+    private float trailTimer;
+    public IReadOnlyList<Vector3> TrailPoints => trail;
+
     public void StarBoost()
     {
         stamina = MaxStamina;
@@ -251,7 +258,7 @@ public sealed class Unicorn : MonoBehaviour
         }
         else
         {
-            targetSpeed = throttle * (grounded ? GroundSpeed : AirSpeed);
+            targetSpeed = throttle * (grounded ? GroundSpeed : AirSpeed) * (WingBoost ? 1.35f : 1f);
             response = grounded ? 10f : 3f;
         }
         var wanted = fwd * targetSpeed;
@@ -300,6 +307,27 @@ public sealed class Unicorn : MonoBehaviour
         transform.position = pos;
 
         stamina = Mathf.Min(MaxStamina, stamina + (Grounded ? 50f : 14f) * dt);
+        if (WingBoost)
+        {
+            stamina = MaxStamina;
+            if (Random.value < dt * 14f) Emit(transform.position + Vector3.up * 1.4f + Random.insideUnitSphere * 0.8f, gold: true, 1, 0.6f);
+        }
+
+        if (RainbowTrail)
+        {
+            RainbowBlast(fwd, 2, false);
+            trailTimer -= dt;
+            if (trailTimer <= 0f)
+            {
+                trailTimer = 0.06f;
+                trail.Add(transform.position + Vector3.up * 1.2f);
+                if (trail.Count > 12) trail.RemoveAt(0);
+            }
+        }
+        else if (trail.Count > 0)
+        {
+            trail.Clear();
+        }
 
         Pose(turn, dt);
         UpdateSparks(dt);
@@ -307,11 +335,14 @@ public sealed class Unicorn : MonoBehaviour
 
     private void TryFlap()
     {
-        if (stamina < FlapCost) return;
-        stamina -= FlapCost;
-        vy = Mathf.Min(Mathf.Max(vy, 0f) + FlapSpeed, 10f);
+        if (!WingBoost)
+        {
+            if (stamina < FlapCost) return;
+            stamina -= FlapCost;
+        }
+        vy = Mathf.Min(Mathf.Max(vy, 0f) + FlapSpeed * (WingBoost ? 1.25f : 1f), 10f);
         flapT = 0f;
-        flapCool = 0.4f;
+        flapCool = WingBoost ? 0.25f : 0.4f;
         Emit(transform.position + Vector3.up * 0.8f, gold: false, 5, 1.5f);
         Sfx.Flap();
     }
