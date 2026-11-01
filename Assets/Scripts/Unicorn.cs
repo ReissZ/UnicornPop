@@ -179,6 +179,14 @@ public sealed class Unicorn : MonoBehaviour
 
     private void Update()
     {
+        // A script recompile during Play wipes the cached references; rebuild the model instead of throwing every frame.
+        if (model == null || legs[0] == null)
+        {
+            for (var c = transform.childCount - 1; c >= 0; c--) Destroy(transform.GetChild(c).gameObject);
+            Build(transform.position, yaw);
+            return;
+        }
+
         var dt = Time.deltaTime;
         var grounded = Grounded;
 
