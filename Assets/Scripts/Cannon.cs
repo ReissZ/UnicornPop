@@ -68,7 +68,8 @@ public sealed class Cannon : MonoBehaviour
             while (!Active) yield return null;
 
             yield return Walk(crateX);
-            var color = Balloon.RandomColor();
+            var golden = Random.value < 0.12f;
+            var color = golden ? Balloon.Gold : Balloon.RandomColor();
             held = Balloon.BuildVisual("Held", jester, color);
             held.localPosition = new Vector3(0, 4.2f, 0);
             held.localScale = Vector3.one * 0.7f;
@@ -83,7 +84,7 @@ public sealed class Cannon : MonoBehaviour
             yield return Idle(0.7f, 18f, 0.35f, Vector3.back);
             shake = 0f;
 
-            Fire(color);
+            Fire(color, golden);
             yield return Idle(Interval, 6f, 0.3f, Vector3.back);
         }
     }
@@ -131,7 +132,7 @@ public sealed class Cannon : MonoBehaviour
         StartCoroutine(Recoil(0.9f, 0.2f));
     }
 
-    private void Fire(Color color)
+    private void Fire(Color color, bool golden)
     {
         var origin = muzzle.position;
         var target = player.position + new Vector3(Random.Range(-10f, 10f), 0, Random.Range(-4f, 6f));
@@ -141,7 +142,7 @@ public sealed class Cannon : MonoBehaviour
         var drift = 1.1f;
         var vel = flat * Drag;
         vel.y = (target.y - origin.y) * Drag + drift;
-        Balloon.Spawn(world, origin, vel, color);
+        Balloon.Spawn(world, origin, vel, color, golden);
         StartCoroutine(Recoil(0.65f, 0.25f));
         StartCoroutine(Smoke());
     }

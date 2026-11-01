@@ -47,6 +47,7 @@ public sealed class Unicorn : MonoBehaviour
     private float roll;
 
     public Transform HornTip { get; private set; }
+    public Transform HornBase { get; private set; }
     public float Stamina01 => stamina / MaxStamina;
     public float DashReady01 => 1f - Mathf.Clamp01(dashCd / DashCooldown);
     public bool Dashing => dashT > 0f;
@@ -88,6 +89,9 @@ public sealed class Unicorn : MonoBehaviour
         HornTip = new GameObject("HornTip").transform;
         HornTip.SetParent(horn, false);
         HornTip.localPosition = new Vector3(0, 0.5f, 0);
+        HornBase = new GameObject("HornBase").transform;
+        HornBase.SetParent(horn, false);
+        HornBase.localPosition = new Vector3(0, -0.5f, 0);
 
         for (var i = 0; i < 4; i++)
         {

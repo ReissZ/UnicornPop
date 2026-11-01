@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 // 3D world: meadow, a castle in the distance with a jester and cannon on its wall, and a chase camera.
 public sealed class UnicornPopGame : MonoBehaviour
@@ -16,7 +17,23 @@ public sealed class UnicornPopGame : MonoBehaviour
     private Transform cannonBarrel;
     private Transform cannonMuzzle;
     private readonly List<Transform> clouds = new List<Transform>();
-    private GUIStyle hint;
+    private Cannon cannon;
+    private Effects effects;
+    private GUIStyle hint, scoreStyle, bigStyle, midStyle;
+    private Texture2D heartTex;
+
+    private const int StartHearts = 3;
+    private const int MaxCombo = 8;
+    private const float ComboWindow = 2.2f;
+    private const float HitRadius = 1.3f;
+
+    private int score;
+    private int hearts = StartHearts;
+    private int combo;
+    private float comboTimer;
+    private bool gameOver;
+    private Vector3 prevTip;
+    private bool hasPrevTip;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
@@ -33,6 +50,10 @@ public sealed class UnicornPopGame : MonoBehaviour
         Random.InitState(12345);
         BuildEnvironment();
         BuildCamera();
+        effects = new GameObject("Effects").AddComponent<Effects>();
+        effects.transform.SetParent(transform, false);
+        heartTex = MakeHeart();
+        Balloon.Escaped += OnBalloonEscaped;
 
         var world = new GameObject("World").transform;
         world.SetParent(transform, false);
@@ -45,10 +66,18 @@ public sealed class UnicornPopGame : MonoBehaviour
         unicorn.transform.SetParent(transform, false);
         unicorn.Build(new Vector3(0, 0, -5f), 0f);
 
-        var cannon = new GameObject("CannonController").AddComponent<Cannon>();
+        // Scenery is seeded for a stable look; gameplay randomness is not.
+        Random.InitState(System.Environment.TickCount);
+
+        cannon = new GameObject("CannonController").AddComponent<Cannon>();
         cannon.transform.SetParent(transform, false);
         cannon.Build(world, jester, cannonBarrel, cannonMuzzle, unicorn.transform, CrateX, 9.8f, 5.5f);
         SnapCamera();
+    }
+
+    private void OnDestroy()
+    {
+        Balloon.Escaped -= OnBalloonEscaped;
     }
 
     // ---------- Setup ----------
@@ -259,6 +288,93 @@ public sealed class UnicornPopGame : MonoBehaviour
             if (p.x > 120f) p.x = -120f;
             c.position = p;
         }
+
+        if (gameOver)
+        {
+            if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Return))
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            }
+            return;
+        }
+
+        if (comboTimer > 0f)
+        {
+            comboTimer -= Time.deltaTime;
+            if (comboTimer <= 0f) combo = 0;
+        }
+        CheckHornHits();
+    }
+
+    // The horn is tested as a segment, and also as the path the tip swept this frame so dashes can't skip through a balloon.
+    private void CheckHornHits()
+    {
+        var tip = unicorn.HornTip.position;
+        var root = unicorn.HornBase.position;
+        var prev = hasPrevTip ? prevTip : tip;
+        prevTip = tip;
+        hasPrevTip = true;
+
+        for (var i = Balloon.Active.Count - 1; i >= 0; i--)
+        {
+            var b = Balloon.Active[i];
+            var c = b.transform.position;
+            if (SegmentDistance(c, root, tip) < HitRadius || SegmentDistance(c, prev, tip) < HitRadius)
+            {
+                PopBalloon(b);
+            }
+        }
+    }
+
+    private static float SegmentDistance(Vector3 p, Vector3 a, Vector3 b)
+    {
+        var ab = b - a;
+        var len = ab.sqrMagnitude;
+        var t = len < 1e-6f ? 0f : Mathf.Clamp01(Vector3.Dot(p - a, ab) / len);
+        return Vector3.Distance(p, a + ab * t);
+    }
+
+    private void PopBalloon(Balloon b)
+    {
+        combo = Mathf.Min(MaxCombo, comboTimer > 0f ? combo + 1 : 1);
+        comboTimer = ComboWindow;
+        var points = (b.Golden ? 5 : 1) * combo;
+        score += points;
+
+        var pos = b.transform.position;
+        effects.Burst(pos, b.Color, b.Golden ? 36 : 20, b.Golden ? 9f : 6f);
+        effects.Text(pos + Vector3.up, "+" + points, b.Golden ? Balloon.Gold : Color.white, b.Golden ? 38 : 28);
+        if (combo >= 2) effects.Text(pos + Vector3.up * 2.2f, "COMBO x" + combo, new Color(1f, 0.6f, 0.85f), 22);
+        b.Pop();
+    }
+
+    private void OnBalloonEscaped(Balloon b)
+    {
+        if (gameOver || b.Golden) return;
+        hearts--;
+        effects.Text(b.transform.position, "Escaped!", new Color(1f, 0.4f, 0.4f), 26);
+        if (hearts <= 0)
+        {
+            gameOver = true;
+            cannon.Active = false;
+        }
+    }
+
+    private static Texture2D MakeHeart()
+    {
+        var tex = new Texture2D(64, 64, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
+        for (var py = 0; py < 64; py++)
+        {
+            for (var px = 0; px < 64; px++)
+            {
+                var x = (px / 63f * 2f - 1f) * 1.25f;
+                var y = (py / 63f * 2f - 1f) * 1.25f + 0.1f;
+                var f = Mathf.Pow(x * x + y * y - 1f, 3f) - x * x * y * y * y;
+                tex.SetPixel(px, py, new Color(1f, 1f, 1f, f < 0f ? 1f : 0f));
+            }
+        }
+        tex.Apply();
+        return tex;
     }
 
     private void LateUpdate()
@@ -285,15 +401,57 @@ public sealed class UnicornPopGame : MonoBehaviour
 
     private void OnGUI()
     {
+        var k = Screen.height / 720f;
         if (hint == null)
         {
             hint = new GUIStyle(GUI.skin.label) { fontSize = 14, fontStyle = FontStyle.Bold };
             hint.normal.textColor = Color.white;
+            scoreStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperCenter };
+            bigStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            midStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         }
         GUI.Label(new Rect(12, 8, 700, 26), "W/S move   A/D turn   Space jump / flap (hold to glide)   Shift dash   Ctrl or C dive", hint);
-
         DrawBar(12, 40, 160, 12, unicorn.Stamina01, new Color(0.5f, 0.9f, 1f));
         DrawBar(12, 58, 160, 8, unicorn.DashReady01, new Color(1f, 0.85f, 0.3f));
+
+        // Score and combo, top centre.
+        Shadowed(new Rect(0, 6 * k, Screen.width, 60 * k), score.ToString(), scoreStyle, Mathf.RoundToInt(46 * k), Color.white);
+        if (combo >= 2)
+        {
+            Shadowed(new Rect(0, 62 * k, Screen.width, 30 * k), "Combo x" + combo, scoreStyle, Mathf.RoundToInt(22 * k), new Color(1f, 0.6f, 0.85f));
+            var w = 160 * k;
+            DrawBar(Screen.width * 0.5f - w * 0.5f, 94 * k, w, 8 * k, comboTimer / ComboWindow, new Color(1f, 0.6f, 0.85f));
+        }
+
+        // Hearts, top right.
+        var size = 40 * k;
+        for (var i = 0; i < StartHearts; i++)
+        {
+            GUI.color = i < hearts ? new Color(1f, 0.3f, 0.45f) : new Color(0f, 0f, 0f, 0.35f);
+            GUI.DrawTexture(new Rect(Screen.width - (StartHearts - i) * (size + 6 * k) - 8 * k, 10 * k, size, size), heartTex);
+        }
+        GUI.color = Color.white;
+
+        if (gameOver)
+        {
+            GUI.color = new Color(0, 0, 0, 0.55f);
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+            var cy = Screen.height * 0.5f;
+            Shadowed(new Rect(0, cy - 110 * k, Screen.width, 80 * k), "Game Over", bigStyle, Mathf.RoundToInt(72 * k), new Color(1f, 0.5f, 0.7f));
+            Shadowed(new Rect(0, cy - 20 * k, Screen.width, 50 * k), "Score " + score, midStyle, Mathf.RoundToInt(40 * k), Color.white);
+            Shadowed(new Rect(0, cy + 50 * k, Screen.width, 40 * k), "Press R to play again", midStyle, Mathf.RoundToInt(26 * k), Color.white);
+        }
+    }
+
+    private static void Shadowed(Rect r, string text, GUIStyle style, int size, Color color)
+    {
+        style.fontSize = size;
+        GUI.color = new Color(0, 0, 0, 0.6f);
+        GUI.Label(new Rect(r.x + 2, r.y + 2, r.width, r.height), text, style);
+        GUI.color = color;
+        GUI.Label(r, text, style);
+        GUI.color = Color.white;
     }
 
     private static void DrawBar(float x, float y, float w, float h, float fill, Color color)
