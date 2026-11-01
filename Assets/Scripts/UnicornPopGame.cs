@@ -183,15 +183,29 @@ public sealed class UnicornPopGame : MonoBehaviour
             var pos = new Vector3(x, 0, z);
             var yaw = Random.Range(0f, 360f);
             var scale = Random.Range(0.85f, 1.5f);
-            if (i % 3 == 0) BuildPine(world, pos, scale);
-            else BuildOak(world, pos, scale, yaw, i % 11 == 0);
+            var palette = TreePalettes[Random.Range(0, TreePalettes.Length)];
+            if (i % 3 == 0) BuildPine(world, pos, scale, palette);
+            else BuildOak(world, pos, scale, yaw, palette);
         }
     }
 
     private static readonly Color Bark = new Color(0.42f, 0.28f, 0.17f);
 
+    // Each entry is a dark and a light shade; the mix of storybook colours keeps the meadow whimsical.
+    private static readonly Color[][] TreePalettes =
+    {
+        new[] { new Color(0.3f, 0.62f, 0.3f), new Color(0.4f, 0.74f, 0.36f) },
+        new[] { new Color(0.3f, 0.62f, 0.3f), new Color(0.4f, 0.74f, 0.36f) },
+        new[] { new Color(0.98f, 0.62f, 0.78f), new Color(1f, 0.82f, 0.9f) },
+        new[] { new Color(0.98f, 0.62f, 0.78f), new Color(1f, 0.82f, 0.9f) },
+        new[] { new Color(0.7f, 0.55f, 0.95f), new Color(0.85f, 0.75f, 1f) },
+        new[] { new Color(0.3f, 0.78f, 0.78f), new Color(0.55f, 0.9f, 0.88f) },
+        new[] { new Color(1f, 0.72f, 0.3f), new Color(1f, 0.86f, 0.5f) },
+        new[] { new Color(0.55f, 0.85f, 0.5f), new Color(0.75f, 0.95f, 0.6f) },
+    };
+
     // Stacked cones that get narrower toward the top, on a thin trunk.
-    private static void BuildPine(Transform world, Vector3 pos, float scale)
+    private static void BuildPine(Transform world, Vector3 pos, float scale, Color[] palette)
     {
         var tree = new GameObject("Pine").transform;
         tree.SetParent(world, false);
@@ -199,19 +213,18 @@ public sealed class UnicornPopGame : MonoBehaviour
         tree.localScale = Vector3.one * scale;
 
         Prim.Make(PrimitiveType.Cylinder, "Trunk", tree, new Vector3(0, 0.9f, 0), new Vector3(0.45f, 0.9f, 0.45f), Bark);
-        var greens = new[] { new Color(0.16f, 0.45f, 0.28f), new Color(0.2f, 0.52f, 0.3f), new Color(0.25f, 0.58f, 0.33f), new Color(0.3f, 0.64f, 0.36f) };
         for (var t = 0; t < 4; t++)
         {
             var w = 3.6f - t * 0.8f;
             var h = 2.1f - t * 0.15f;
-            Prim.Cone("Tier", tree, new Vector3(0, 1.7f + t * 1.15f + h * 0.5f, 0), new Vector3(w, h, w), greens[t]);
+            Prim.Cone("Tier", tree, new Vector3(0, 1.7f + t * 1.15f + h * 0.5f, 0), new Vector3(w, h, w), Color.Lerp(palette[0] * 0.85f, palette[1], t / 3f));
         }
     }
 
     // Flared trunk, a couple of branches and a canopy made of several overlapping blobs.
-    private static void BuildOak(Transform world, Vector3 pos, float scale, float yaw, bool blossom)
+    private static void BuildOak(Transform world, Vector3 pos, float scale, float yaw, Color[] palette)
     {
-        var tree = new GameObject(blossom ? "Blossom" : "Oak").transform;
+        var tree = new GameObject("Oak").transform;
         tree.SetParent(world, false);
         tree.position = pos;
         tree.rotation = Quaternion.Euler(0, yaw, 0);
@@ -222,8 +235,8 @@ public sealed class UnicornPopGame : MonoBehaviour
         Prim.Make(PrimitiveType.Cylinder, "BranchL", tree, new Vector3(-0.6f, 2.8f, 0), new Vector3(0.28f, 0.8f, 0.28f), Bark, new Vector3(0, 0, 40));
         Prim.Make(PrimitiveType.Cylinder, "BranchR", tree, new Vector3(0.55f, 3.0f, 0.1f), new Vector3(0.25f, 0.7f, 0.25f), Bark, new Vector3(0, 0, -35));
 
-        var baseGreen = blossom ? new Color(0.98f, 0.7f, 0.82f) : new Color(0.3f, 0.62f, 0.3f);
-        var light = blossom ? new Color(1f, 0.82f, 0.9f) : new Color(0.4f, 0.74f, 0.36f);
+        var baseGreen = palette[0];
+        var light = palette[1];
         var blobs = new[]
         {
             new Vector4(0f, 4.1f, 0f, 3.2f),
