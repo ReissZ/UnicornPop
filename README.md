@@ -1,6 +1,6 @@
 # Unicorn Pop
 
-A Unity 6 (6000.6.7f1) game. A unicorn stands on top of a castle while a cannon fires balloons into the sky. Pop them with your horn before they float away.
+A Unity 6 (6000.6.7f1) 3D game, built in small testable batches. A winged unicorn flies around a meadow in front of a distant castle, where a jester loads a cannon that fires balloons. Pop them with your horn.
 
 ## Play
 
@@ -9,12 +9,20 @@ A Unity 6 (6000.6.7f1) game. A unicorn stands on top of a castle while a cannon 
 
 | Input | Action |
 |---|---|
-| A / D or arrow keys | Run along the castle |
-| Space / W / Up | Jump (press again in the air to double jump) |
-| Touch / mouse | Hold to run toward the pointer, quick tap to jump |
+| W / S or Up / Down | Move forward / back |
+| A / D or Left / Right | Turn |
+| Space | Jump, then flap in the air (hold to glide) |
+| Shift | Dash |
+| Ctrl or C | Dive |
 
-- Each escaped balloon costs a heart (3 hearts total); golden balloons are worth 5 and are never penalised.
-- Quick consecutive pops build a combo multiplier (up to x8).
-- The cannon fires faster the longer you survive. High score is saved locally.
+Flaps use stamina (blue bar); the dash cooldown is the yellow bar.
 
-All art and sound are generated in code by `Assets/Scripts/UnicornPopGame.cs`, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).
+## Progress
+
+- [x] Batch 1: 3D world, castle, jester, cannon, flying unicorn with chase camera
+- [ ] Batch 2: jester loads the cannon, balloons fly out
+- [ ] Batch 3: horn popping, score, combo, golden balloons, hearts
+- [ ] Batch 4: title / game over, high score, sound, particles
+- [ ] Batch 5: difficulty ramp and polish
+
+All models are built from Unity primitives in code, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).

@@ -1,184 +1,323 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-// Batch 2: the unicorn. Runs along the castle walkway, jumps and double jumps.
+// The player: a winged unicorn that runs, jumps, flaps, glides and dashes. Hits are made with HornTip.
 public sealed class Unicorn : MonoBehaviour
 {
-    private const float MoveSpeed = 4.5f;
+    private const float GroundSpeed = 7f;
+    private const float AirSpeed = 9f;
+    private const float DashSpeed = 26f;
+    private const float DashTime = 0.28f;
+    private const float DashCooldown = 1f;
     private const float JumpSpeed = 8.5f;
-    private const float Gravity = -24f;
-    private const float MinX = -4.2f;
-    private const float MaxX = 1.8f;
+    private const float FlapSpeed = 6.5f;
+    private const float FlapCost = 12f;
+    private const float Gravity = -18f;
+    private const float GlideFall = -2.5f;
+    private const float MaxHeight = 28f;
 
-    private Camera cam;
-    private Transform body;
-    private Transform[] legs;
-    private Transform[] tail;
-    private float x = -1f;
-    private float height;
+    public const float MaxStamina = 100f;
+
+    private sealed class Spark
+    {
+        public Transform T;
+        public Vector3 Vel;
+        public float Life;
+        public float MaxLife;
+    }
+
+    private Transform model;
+    private readonly Transform[] legs = new Transform[4];
+    private readonly Transform[] tail = new Transform[4];
+    private readonly Transform[] wings = new Transform[2];
+    private readonly List<Spark> sparks = new List<Spark>();
+
+    private float yaw;
     private float vy;
-    private int jumpsUsed;
-    private int facing = 1;
+    private Vector3 hv;
+    private float stamina = MaxStamina;
+    private float dashT;
+    private float dashCd;
+    private float flapT = 1f;
+    private float flapCool;
     private float walkCycle;
-    private bool walking;
-
-    // Pointer state: hold to run toward the pointer, quick tap to jump.
-    private bool pressing;
-    private float pressTime;
-    private float pressStartX;
-    private float moveTarget = float.NaN;
+    private float wingAngle = 80f;
+    private float wingSpread = 0.45f;
+    private float pitch;
+    private float roll;
 
     public Transform HornTip { get; private set; }
+    public float Stamina01 => stamina / MaxStamina;
+    public float DashReady01 => 1f - Mathf.Clamp01(dashCd / DashCooldown);
+    public bool Dashing => dashT > 0f;
+    public Vector3 Forward => Quaternion.Euler(0, yaw, 0) * Vector3.forward;
+    public bool Grounded => transform.position.y <= 0.01f;
 
-    public void Build(Camera camera)
+    public void Build(Vector3 start, float startYaw)
     {
-        cam = camera;
+        transform.position = start;
+        yaw = startYaw;
+
         var white = new Color(0.98f, 0.96f, 1f);
+        var shade = new Color(0.86f, 0.84f, 0.94f);
         var pink = new Color(1f, 0.55f, 0.8f);
-        var purple = new Color(0.7f, 0.5f, 0.95f);
-        var gold = new Color(1f, 0.85f, 0.3f);
-        var hoof = new Color(0.8f, 0.7f, 0.9f);
+        var gold = new Color(1f, 0.82f, 0.25f);
+        var rainbow = new[]
+        {
+            new Color(1f, 0.45f, 0.6f), new Color(1f, 0.75f, 0.35f),
+            new Color(0.5f, 0.85f, 0.6f), new Color(0.5f, 0.65f, 1f),
+        };
 
-        body = new GameObject("Body").transform;
-        body.SetParent(transform, false);
+        model = new GameObject("Model").transform;
+        model.SetParent(transform, false);
 
-        legs = new Transform[4];
-        var legX = new[] { -0.3f, -0.15f, 0.2f, 0.35f };
+        Prim.Make(PrimitiveType.Sphere, "Torso", model, new Vector3(0, 1.0f, 0), new Vector3(0.75f, 0.75f, 1.4f), white);
+        Prim.Make(PrimitiveType.Cylinder, "Neck", model, new Vector3(0, 1.45f, 0.6f), new Vector3(0.32f, 0.38f, 0.32f), white, new Vector3(35, 0, 0));
+        Prim.Make(PrimitiveType.Sphere, "Head", model, new Vector3(0, 1.8f, 0.95f), new Vector3(0.42f, 0.42f, 0.55f), white);
+        Prim.Make(PrimitiveType.Sphere, "Snout", model, new Vector3(0, 1.7f, 1.25f), new Vector3(0.3f, 0.27f, 0.32f), new Color(1f, 0.9f, 0.95f));
+        Prim.Make(PrimitiveType.Sphere, "Nose", model, new Vector3(0, 1.72f, 1.4f), new Vector3(0.1f, 0.08f, 0.08f), pink);
+        foreach (var s in new[] { -1f, 1f })
+        {
+            Prim.Make(PrimitiveType.Sphere, "Eye", model, new Vector3(0.17f * s, 1.88f, 1.12f), Vector3.one * 0.1f, new Color(0.15f, 0.08f, 0.25f));
+            Prim.Make(PrimitiveType.Sphere, "Shine", model, new Vector3(0.19f * s, 1.91f, 1.16f), Vector3.one * 0.035f, Color.white);
+            Prim.Cone("Ear", model, new Vector3(0.14f * s, 2.07f, 0.85f), new Vector3(0.11f, 0.22f, 0.11f), pink, new Vector3(0, 0, -15f * s));
+        }
+
+        // Golden horn, angled up and forward.
+        var horn = Prim.Cone("Horn", model, new Vector3(0, 2.18f, 1.26f), new Vector3(0.13f, 0.6f, 0.13f), gold, new Vector3(50, 0, 0));
+        HornTip = new GameObject("HornTip").transform;
+        HornTip.SetParent(horn, false);
+        HornTip.localPosition = new Vector3(0, 0.5f, 0);
+
         for (var i = 0; i < 4; i++)
         {
-            // Pivot at the hip so rotating swings the leg.
+            Prim.Make(PrimitiveType.Sphere, "Mane", model, new Vector3(0, 2.0f - i * 0.2f, 0.55f - i * 0.12f), new Vector3(0.2f, 0.3f, 0.34f), rainbow[i]);
+        }
+
+        var hips = new[] { new Vector3(-0.24f, 0.85f, 0.45f), new Vector3(0.24f, 0.85f, 0.45f), new Vector3(-0.24f, 0.85f, -0.45f), new Vector3(0.24f, 0.85f, -0.45f) };
+        for (var i = 0; i < 4; i++)
+        {
             var pivot = new GameObject("Leg").transform;
-            pivot.SetParent(body, false);
-            pivot.localPosition = new Vector2(legX[i], 0.05f);
-            Art.Spr("Shin", pivot, Art.Square, new Vector2(0, -0.2f), new Vector2(0.12f, 0.45f), i % 2 == 0 ? white : new Color(0.88f, 0.86f, 0.95f), 20);
-            Art.Spr("Hoof", pivot, Art.Square, new Vector2(0, -0.42f), new Vector2(0.13f, 0.1f), hoof, 21);
+            pivot.SetParent(model, false);
+            pivot.localPosition = hips[i];
+            Prim.Make(PrimitiveType.Cylinder, "Shin", pivot, new Vector3(0, -0.4f, 0), new Vector3(0.14f, 0.4f, 0.14f), i % 2 == 0 ? white : shade);
+            Prim.Make(PrimitiveType.Sphere, "Hoof", pivot, new Vector3(0, -0.8f, 0), new Vector3(0.17f, 0.12f, 0.2f), new Color(0.75f, 0.65f, 0.9f));
             legs[i] = pivot;
         }
 
-        Art.Spr("Torso", body, Art.Circle, new Vector2(0, 0.15f), new Vector2(1.1f, 0.6f), white, 22);
-        Art.Spr("Neck", body, Art.Square, new Vector2(0.4f, 0.45f), new Vector2(0.28f, 0.55f), white, 22, -20f);
-        Art.Spr("Head", body, Art.Circle, new Vector2(0.55f, 0.75f), new Vector2(0.5f, 0.42f), white, 24);
-        Art.Spr("Snout", body, Art.Circle, new Vector2(0.78f, 0.68f), new Vector2(0.26f, 0.22f), new Color(1f, 0.9f, 0.95f), 25);
-        Art.Spr("Nostril", body, Art.Circle, new Vector2(0.86f, 0.68f), new Vector2(0.04f, 0.04f), pink, 26);
-        Art.Spr("Eye", body, Art.Circle, new Vector2(0.62f, 0.8f), new Vector2(0.09f, 0.11f), new Color(0.2f, 0.1f, 0.3f), 26);
-        Art.Spr("EyeShine", body, Art.Circle, new Vector2(0.64f, 0.83f), new Vector2(0.03f, 0.03f), Color.white, 27);
-        Art.Spr("Ear", body, Art.Triangle, new Vector2(0.43f, 0.98f), new Vector2(0.14f, 0.22f), pink, 23, 15f);
-        Art.Spr("Cheek", body, Art.Circle, new Vector2(0.66f, 0.7f), new Vector2(0.1f, 0.07f), new Color(1f, 0.7f, 0.8f), 26);
-
-        // Golden spiral-ish horn pointing up and forward.
-        var horn = new GameObject("Horn").transform;
-        horn.SetParent(body, false);
-        horn.localPosition = new Vector2(0.62f, 0.94f);
-        horn.localRotation = Quaternion.Euler(0, 0, -25f);
-        Art.Spr("HornShape", horn, Art.Triangle, new Vector2(0, 0.28f), new Vector2(0.17f, 0.6f), gold, 25);
-        for (var i = 0; i < 3; i++)
-        {
-            Art.Spr("Stripe", horn, Art.Square, new Vector2(0, 0.14f + i * 0.14f), new Vector2(0.12f - i * 0.03f, 0.03f), new Color(0.9f, 0.6f, 0.1f), 26, 15f);
-        }
-        HornTip = new GameObject("HornTip").transform;
-        HornTip.SetParent(horn, false);
-        HornTip.localPosition = new Vector2(0, 0.58f);
-
-        // Rainbow mane down the neck.
-        var mane = new[] { pink, purple, new Color(0.5f, 0.8f, 1f), new Color(0.6f, 0.95f, 0.7f) };
-        for (var i = 0; i < mane.Length; i++)
-        {
-            Art.Spr("Mane", body, Art.Circle, new Vector2(0.28f - i * 0.04f, 0.9f - i * 0.17f), new Vector2(0.3f, 0.24f), mane[i], 21);
-        }
-
-        // Rainbow tail, animated in Pose.
-        tail = new Transform[4];
         for (var i = 0; i < tail.Length; i++)
         {
             var piv = new GameObject("Tail").transform;
-            piv.SetParent(body, false);
-            piv.localPosition = new Vector2(-0.5f, 0.2f);
-            Art.Spr("TailPiece", piv, Art.Circle, new Vector2(-0.25f, 0), new Vector2(0.5f - i * 0.05f, 0.14f), mane[i], 19 - i);
+            piv.SetParent(model, false);
+            piv.localPosition = new Vector3(0, 1.1f, -0.65f);
+            Prim.Make(PrimitiveType.Sphere, "TailPiece", piv, new Vector3(0, -0.1f - i * 0.05f, -0.2f - i * 0.2f), new Vector3(0.22f, 0.22f, 0.34f), rainbow[i]);
             tail[i] = piv;
         }
 
-        Pose();
+        for (var i = 0; i < 2; i++)
+        {
+            var s = i == 0 ? 1f : -1f;
+            var wing = new GameObject("Wing").transform;
+            wing.SetParent(model, false);
+            wing.localPosition = new Vector3(0.3f * s, 1.3f, 0.15f);
+            Prim.Make(PrimitiveType.Cube, "Feather", wing, new Vector3(0.45f * s, 0, 0), new Vector3(0.9f, 0.05f, 0.5f), white);
+            Prim.Make(PrimitiveType.Cube, "Feather", wing, new Vector3(0.65f * s, 0, -0.3f), new Vector3(0.9f, 0.05f, 0.4f), pink);
+            Prim.Make(PrimitiveType.Cube, "Feather", wing, new Vector3(0.85f * s, 0, -0.55f), new Vector3(0.8f, 0.05f, 0.3f), new Color(0.75f, 0.65f, 1f));
+            wings[i] = wing;
+        }
+
+        Pose(0f, 0f);
     }
 
     private void Update()
     {
-        if (cam == null) return;
         var dt = Time.deltaTime;
+        var grounded = Grounded;
 
-        var dir = 0f;
-        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) dir -= 1f;
-        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) dir += 1f;
-        var jump = Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow);
+        var turn = 0f;
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) turn -= 1f;
+        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) turn += 1f;
+        var throttle = 0f;
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) throttle = 1f;
+        else if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) throttle = -0.4f;
+        var spaceDown = Input.GetKeyDown(KeyCode.Space);
+        var spaceHeld = Input.GetKey(KeyCode.Space);
+        var dive = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
 
-        var pointerX = cam.ScreenToWorldPoint(Input.mousePosition).x;
-        if (Input.GetMouseButtonDown(0))
+        yaw += turn * (grounded ? 130f : 150f) * dt;
+        var fwd = Forward;
+
+        dashCd -= dt;
+        flapCool -= dt;
+        if ((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) && dashCd <= 0f)
         {
-            pressing = true;
-            pressTime = 0f;
-            pressStartX = pointerX;
+            dashT = DashTime;
+            dashCd = DashCooldown;
+            Emit(transform.position + Vector3.up, gold: true, 14, 3f);
         }
-        if (pressing)
+
+        float targetSpeed;
+        float response;
+        if (dashT > 0f)
         {
-            pressTime += dt;
-            if (Input.GetMouseButton(0) && (pressTime > 0.12f || Mathf.Abs(pointerX - pressStartX) > 0.4f))
+            dashT -= dt;
+            targetSpeed = DashSpeed;
+            response = 20f;
+            vy *= Mathf.Exp(-8f * dt);
+            if (Random.value < 0.8f) Emit(transform.position + Vector3.up + fwd * -0.8f, gold: true, 1, 1f);
+        }
+        else
+        {
+            targetSpeed = throttle * (grounded ? GroundSpeed : AirSpeed);
+            response = grounded ? 10f : 3f;
+        }
+        hv = Vector3.Lerp(hv, fwd * targetSpeed, 1f - Mathf.Exp(-response * dt));
+
+        if (spaceDown)
+        {
+            if (grounded)
             {
-                moveTarget = pointerX;
+                vy = JumpSpeed;
             }
-            if (Input.GetMouseButtonUp(0))
+            else
             {
-                pressing = false;
-                if (pressTime < 0.18f && Mathf.Abs(pointerX - pressStartX) < 0.4f) jump = true;
-                moveTarget = float.NaN;
+                TryFlap();
             }
         }
-        if (dir == 0f && !float.IsNaN(moveTarget))
+        else if (spaceHeld && !grounded && vy < -1f && flapCool <= 0f)
         {
-            var delta = moveTarget - x;
-            if (Mathf.Abs(delta) > 0.15f) dir = Mathf.Sign(delta);
+            TryFlap();
         }
 
-        if (dir != 0f) facing = dir > 0f ? 1 : -1;
-        x = Mathf.Clamp(x + dir * MoveSpeed * dt, MinX, MaxX);
-        walking = dir != 0f;
-        walkCycle += (walking && height <= 0.001f ? 14f : 4f) * dt;
-
-        if (jump && jumpsUsed < 2)
+        if (!grounded || vy > 0f)
         {
-            vy = JumpSpeed * (jumpsUsed == 0 ? 1f : 0.85f);
-            jumpsUsed++;
+            vy += Gravity * dt;
+            if (dive) vy = Mathf.Max(vy - 30f * dt, -16f);
+            else if (spaceHeld && vy < GlideFall && dashT <= 0f) vy = Mathf.Lerp(vy, GlideFall, 1f - Mathf.Exp(-8f * dt));
         }
 
-        vy += Gravity * dt;
-        height += vy * dt;
-        if (height <= 0f)
+        var pos = transform.position + (hv + Vector3.up * vy) * dt;
+        pos.x = Mathf.Clamp(pos.x, -45f, 45f);
+        pos.z = Mathf.Clamp(pos.z, -25f, 50f);
+        if (pos.y >= MaxHeight)
         {
-            height = 0f;
-            vy = 0f;
-            jumpsUsed = 0;
+            pos.y = MaxHeight;
+            vy = Mathf.Min(vy, 0f);
         }
+        if (pos.y <= 0f)
+        {
+            if (vy < -6f) Emit(pos, gold: false, 8, 2.5f);
+            pos.y = 0f;
+            vy = Mathf.Max(vy, 0f);
+        }
+        transform.position = pos;
 
-        Pose();
+        stamina = Mathf.Min(MaxStamina, stamina + (Grounded ? 50f : 14f) * dt);
+
+        Pose(turn, dt);
+        UpdateSparks(dt);
     }
 
-    private void Pose()
+    private void TryFlap()
     {
-        transform.position = new Vector3(x, UnicornPopGame.WalkwayY + 0.5f + height, 0);
-        var sx = Mathf.Lerp(body.localScale.x, facing, 0.35f);
-        var airborne = height > 0.001f;
-        var bob = airborne ? 0f : Mathf.Abs(Mathf.Sin(walkCycle)) * (walking ? 0.07f : 0.02f);
-        body.localScale = new Vector3(sx, 1f, 1f);
-        body.localPosition = new Vector3(0, bob, 0);
-        var tilt = airborne ? Mathf.Clamp(vy * -0.6f, -12f, 12f) : 0f;
-        body.localRotation = Quaternion.Euler(0, 0, tilt * Mathf.Sign(sx) * 0.5f);
+        if (stamina < FlapCost) return;
+        stamina -= FlapCost;
+        vy = Mathf.Min(Mathf.Max(vy, 0f) + FlapSpeed, 10f);
+        flapT = 0f;
+        flapCool = 0.4f;
+        Emit(transform.position + Vector3.up * 0.8f, gold: false, 5, 1.5f);
+    }
+
+    private void Pose(float turn, float dt)
+    {
+        var airborne = !Grounded;
+        transform.rotation = Quaternion.Euler(0, yaw, 0);
+
+        var targetPitch = dashT > 0f ? 18f : Mathf.Clamp(-vy * 2.5f, -25f, 25f);
+        var targetRoll = airborne ? -turn * 20f : 0f;
+        var k = 1f - Mathf.Exp(-8f * dt);
+        pitch = Mathf.Lerp(pitch, airborne ? targetPitch : 0f, k);
+        roll = Mathf.Lerp(roll, targetRoll, k);
+        model.localRotation = Quaternion.Euler(pitch, 0, roll);
+
+        var planar = new Vector2(hv.x, hv.z).magnitude;
+        walkCycle += (airborne ? 3f : 3f + planar * 1.6f) * dt;
+        var bob = airborne ? 0f : Mathf.Abs(Mathf.Sin(walkCycle)) * Mathf.Min(planar / GroundSpeed, 1f) * 0.1f;
+        model.localPosition = new Vector3(0, bob, 0);
 
         for (var i = 0; i < legs.Length; i++)
         {
-            var phase = i % 2 == 0 ? 0f : Mathf.PI;
-            var swing = airborne ? (i < 2 ? -35f : 35f) : Mathf.Sin(walkCycle + phase) * (walking ? 32f : 0f);
-            legs[i].localRotation = Quaternion.Euler(0, 0, swing);
+            float swing;
+            if (airborne)
+            {
+                swing = i < 2 ? -35f : 40f;
+            }
+            else
+            {
+                var phase = (i == 0 || i == 3) ? 0f : Mathf.PI;
+                swing = Mathf.Sin(walkCycle + phase) * Mathf.Min(planar / GroundSpeed, 1.2f) * 35f;
+            }
+            legs[i].localRotation = Quaternion.Euler(swing, 0, 0);
         }
         for (var i = 0; i < tail.Length; i++)
         {
-            tail[i].localRotation = Quaternion.Euler(0, 0, 20f - i * 8f + Mathf.Sin(Time.time * 6f + i * 0.5f) * 8f);
+            var lift = airborne ? 10f : 25f;
+            tail[i].localRotation = Quaternion.Euler(-lift + i * 4f, Mathf.Sin(Time.time * 5f + i * 0.6f) * 10f, 0);
+        }
+
+        // Wings stay folded on the ground, beat on a flap and hold open while gliding.
+        if (flapT < 1f) flapT += dt / 0.35f;
+        float angle;
+        float spread;
+        if (!airborne)
+        {
+            angle = 80f;
+            spread = 0.45f;
+        }
+        else if (flapT < 1f)
+        {
+            angle = 55f * Mathf.Cos(flapT * Mathf.PI * 2f) - 5f;
+            spread = 1f;
+        }
+        else
+        {
+            angle = 12f + Mathf.Sin(Time.time * 4f) * 8f;
+            spread = 1f;
+        }
+        var wk = 1f - Mathf.Exp(-(flapT < 1f ? 30f : 10f) * dt);
+        wingAngle = Mathf.Lerp(wingAngle, angle, wk);
+        wingSpread = Mathf.Lerp(wingSpread, spread, wk);
+        wings[0].localRotation = Quaternion.Euler(0, 0, wingAngle);
+        wings[1].localRotation = Quaternion.Euler(0, 0, -wingAngle);
+        wings[0].localScale = new Vector3(wingSpread, 1f, 1f);
+        wings[1].localScale = new Vector3(wingSpread, 1f, 1f);
+    }
+
+    private void Emit(Vector3 pos, bool gold, int count, float speed)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var color = gold ? new Color(1f, 0.9f, 0.4f) : new Color(1f, 1f, 1f);
+            var t = Prim.Make(PrimitiveType.Sphere, "Spark", null, pos, Vector3.one * Random.Range(0.1f, 0.22f), color);
+            var life = Random.Range(0.35f, 0.7f);
+            sparks.Add(new Spark { T = t, Vel = Random.onUnitSphere * speed, Life = life, MaxLife = life });
+        }
+    }
+
+    private void UpdateSparks(float dt)
+    {
+        for (var i = sparks.Count - 1; i >= 0; i--)
+        {
+            var s = sparks[i];
+            s.Life -= dt;
+            if (s.Life <= 0f)
+            {
+                Destroy(s.T.gameObject);
+                sparks.RemoveAt(i);
+                continue;
+            }
+            s.T.position += s.Vel * dt;
+            s.T.localScale = Vector3.one * (0.22f * s.Life / s.MaxLife);
         }
     }
 }
