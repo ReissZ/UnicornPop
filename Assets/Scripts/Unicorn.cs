@@ -121,7 +121,7 @@ public sealed class Unicorn : MonoBehaviour
 
     public bool Dashing => dashT > 0f;
     public Vector3 Forward => Quaternion.Euler(0, yaw, 0) * Vector3.forward;
-    public bool Grounded => transform.position.y <= 0.01f;
+    public bool Grounded => transform.position.y <= Dreamland.FloorAt(transform.position, transform.position.y) + 0.01f;
 
     public void Build(Vector3 start, float startYaw)
     {
@@ -356,10 +356,11 @@ public sealed class Unicorn : MonoBehaviour
             pos.y = MaxHeight;
             vy = Mathf.Min(vy, 0f);
         }
-        if (pos.y <= 0f)
+        var floor = Dreamland.FloorAt(pos, transform.position.y);
+        if (pos.y <= floor)
         {
             if (vy < -6f) Emit(pos, gold: false, 8, 2.5f);
-            pos.y = 0f;
+            pos.y = floor;
             vy = Mathf.Max(vy, 0f);
         }
         transform.position = pos;

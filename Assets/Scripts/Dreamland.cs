@@ -19,6 +19,27 @@ public sealed partial class Dreamland : MonoBehaviour
     private readonly List<float> clusterPhase = new List<float>();
     private readonly List<Transform> islands = new List<Transform>();
     private readonly List<float> islandBaseY = new List<float>();
+    private static readonly List<Transform> solidIslands = new List<Transform>();
+    private static readonly List<float> solidRadii = new List<float>();
+
+    // Height of the surface under (x, z). An island counts only if the caller is at or above its top.
+    public static float FloorAt(Vector3 pos, float fromY)
+    {
+        var best = 0f;
+        for (var i = 0; i < solidIslands.Count; i++)
+        {
+            var isl = solidIslands[i];
+            if (isl == null) continue;
+            var c = isl.position;
+            var dx = pos.x - c.x;
+            var dz = pos.z - c.z;
+            var r = solidRadii[i];
+            if (dx * dx + dz * dz > r * r) continue;
+            var top = c.y + 0.09f;
+            if (fromY >= top - 0.2f && top > best) best = top;
+        }
+        return best;
+    }
     private Material[] flowerMats;
     private Color[] flowerColors;
     private Transform shootingStar;
@@ -301,6 +322,8 @@ public sealed partial class Dreamland : MonoBehaviour
 
     private void BuildIslands(Transform world)
     {
+        solidIslands.Clear();
+        solidRadii.Clear();
         BuildIsland(world, new Vector3(-36f, 16f, 26f), 11f);
         BuildIsland(world, new Vector3(38f, 20f, 38f), 9f);
         BuildIsland(world, new Vector3(-22f, 24f, 66f), 13f);
@@ -328,6 +351,8 @@ public sealed partial class Dreamland : MonoBehaviour
         mist.GetComponent<Renderer>().sharedMaterial = Glow(new Color(1f, 1f, 1f), 0.4f, 0.1f);
 
         islands.Add(isl);
+        solidIslands.Add(isl);
+        solidRadii.Add(size * 0.5f);
         islandBaseY.Add(pos.y);
     }
 
