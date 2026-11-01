@@ -51,6 +51,8 @@ public sealed class DreamSaver : MonoBehaviour
     }
 
     // Called at the moment the horn pops a balloon.
+    public static void Restore(int n) => Saved = n;
+
     public static void Release(Vector3 pos, Color color, bool boss = false)
     {
         if (Instance != null) Instance.DoRelease(pos, color, boss);

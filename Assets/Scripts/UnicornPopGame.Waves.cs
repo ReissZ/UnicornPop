@@ -16,6 +16,41 @@ public sealed partial class UnicornPopGame
     private string bannerText = "", bannerSub = "";
     private Color bannerColor = Color.white;
 
+    // Checkpoints survive a game over: 1/3 and 2/3 of the meter, the Jester's lock, and the broken lock.
+    private static int ckRealm = -1, ckDreams, ckStage;
+    private static bool resumeNext;
+    private int resumeBase;
+
+    private void SaveCheckpoint(int dreams, int stage, string label)
+    {
+        if (ckRealm == Realm.Index && (stage < ckStage || (stage == ckStage && dreams <= ckDreams))) return;
+        ckRealm = Realm.Index;
+        ckDreams = dreams;
+        ckStage = stage;
+        effects.Text(unicorn.transform.position + Vector3.up * 4f, "Checkpoint! " + label, new Color(0.6f, 1f, 0.8f), 34);
+        Sfx.Golden();
+    }
+
+    private bool HasCheckpoint => ckRealm == Realm.Index && ckDreams > 0;
+
+    private void ResumeFromCheckpoint()
+    {
+        if (!resumeNext || !HasCheckpoint) { resumeNext = false; return; }
+        resumeNext = false;
+        resumeBase = ckDreams;
+        DreamSaver.Restore(ckDreams);
+        score = ckDreams * 10;
+        var z = ckStage == 0 ? Mathf.Lerp(EngageZ, CastleZ - 40f, Progress) : CastleZ - 40f;
+        unicorn.ResetTo(new Vector3(0f, 8f, Mathf.Max(z, EngageZ + 10f)), 0f);
+        if (ckStage >= 2)
+        {
+            gateOpen = puzzleDone = true;
+            bossRespawn = 2f;
+            Banner("CHECKPOINT", realm.KingName + " rolls out his boss balloon again...", new Color(0.6f, 1f, 0.8f), 3f);
+        }
+        else Banner("CHECKPOINT", "Back with " + ckDreams + " dreams saved", new Color(0.6f, 1f, 0.8f), 3f);
+    }
+
     private float Progress => Mathf.Clamp01(DreamSaver.Saved / (float)realm.DreamGoal);
 
     private void Banner(string text, string sub, Color color, float seconds = 3f)
@@ -55,6 +90,11 @@ public sealed partial class UnicornPopGame
             if (DreamSaver.Saved > 0) Banner(dreamland.ThemeName, "The dream light grows...", new Color(1f, 0.9f, 0.4f), 2.5f);
         }
 
+        if (!gateOpen)
+        {
+            if (DreamSaver.Saved >= realm.DreamGoal * 2 / 3) SaveCheckpoint(realm.DreamGoal * 2 / 3, 0, "2/3 of the dreams");
+            else if (DreamSaver.Saved >= realm.DreamGoal / 3) SaveCheckpoint(realm.DreamGoal / 3, 0, "1/3 of the dreams");
+        }
         if (!gateOpen && DreamSaver.Saved >= realm.DreamGoal) OpenGate();
         if (!gateOpen) return;
 
@@ -72,6 +112,7 @@ public sealed partial class UnicornPopGame
     private void OpenGate()
     {
         gateOpen = true;
+        SaveCheckpoint(realm.DreamGoal, 1, "the gate");
         kingGrump = 2f;
         Sfx.Record();
         effects.Text(unicorn.transform.position + Vector3.up * 4f, "The gate opens!", new Color(1f, 0.9f, 0.4f), 46);
@@ -84,7 +125,8 @@ public sealed partial class UnicornPopGame
         cannon.Active = false;
         cannon.Remaining = 0;
         stars = hearts >= StartHearts ? 3 : hearts == 2 ? 2 : 1;
-        Upgrades.Bank(DreamSaver.Saved + stars * 10);
+        ckRealm = -1;
+        Upgrades.Bank(DreamSaver.Saved - resumeBase + stars * 10);
         Realm.UnlockNext();
         var key = StarsKey + realm.Name;
         if (stars > PlayerPrefs.GetInt(key, 0))
@@ -114,6 +156,7 @@ public sealed partial class UnicornPopGame
     {
         ShopInput();
         var next = Input.GetKeyDown(KeyCode.Return) || Pad.StartDown;
+        ckRealm = -1;
         if (next && Realm.HasNext) Realm.Select(Realm.Index + 1);
         if (Input.GetKeyDown(KeyCode.R) || next)
         {

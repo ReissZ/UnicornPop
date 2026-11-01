@@ -74,7 +74,12 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     private static bool skipTitle;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => skipTitle = false;
+    private static void ResetStatics()
+    {
+        skipTitle = false;
+        ckRealm = -1;
+        resumeNext = false;
+    }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
@@ -152,6 +157,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         Music.SetDuck(1f);
         Music.SetTheme(realm.Sky[0]);
         EndTitle();
+        ResumeFromCheckpoint();
         cannon.Active = true;
         SnapCamera();
         startFrame = Time.frameCount;
@@ -476,8 +482,12 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         if (gameOver)
         {
             ShopInput();
-            if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Return) || Pad.JumpDown || Pad.StartDown)
+            var again = Input.GetKeyDown(KeyCode.R);
+            var carryOn = Input.GetKeyDown(KeyCode.Return) || Pad.JumpDown || Pad.StartDown;
+            if (again) ckRealm = -1;
+            if (again || carryOn)
             {
+                resumeNext = carryOn && HasCheckpoint;
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
             return;
@@ -887,7 +897,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         }
 
         gameOver = true;
-        Upgrades.Bank(DreamSaver.Saved);
+        Upgrades.Bank(DreamSaver.Saved - resumeBase);
         Music.SetDuck(0.4f);
         Music.SetBoss(false);
         starPower = rainbowPower = slowPower = boostPower = 0f;
@@ -1080,7 +1090,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
                 Shadowed(new Rect(0, cy - 48 * k, Screen.width, 40 * k), "Best " + best, midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.5f));
             }
             DrawShop(k, cy + 70 * k);
-            Shadowed(new Rect(0, Screen.height - 40 * k, Screen.width, 30 * k), "Press R to play again", midStyle, Mathf.RoundToInt(24 * k), Color.white);
+            Shadowed(new Rect(0, Screen.height - 40 * k, Screen.width, 30 * k), (HasCheckpoint ? "Enter: continue from checkpoint (" + ckDreams + " dreams)   -   R: restart the realm" : "Press Enter or R to play again"), midStyle, Mathf.RoundToInt(24 * k), Color.white);
         }
     }
 

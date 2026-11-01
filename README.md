@@ -58,6 +58,7 @@ Each realm has its own castle, a jester-type launcher and a King. Save enough dr
 All models are built from Unity primitives in code, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).
 - [x] Batch 20: realms 4-6 (Storm Canyon, Candy Clouds, The Dreamless Realm) with new skies, scenery, kings and the galaxy-saved ending
 - [x] Batch 21: polish - each realm has its own accent colour (flags, windows, beacon, boss balloon) and King robes; title-screen realm map with stars
+- [x] Checkpoints: progress is saved at 1/3 and 2/3 of the dream meter, at the Jester's gate and when the lock breaks; after a game over, Enter continues from the checkpoint and R restarts the realm
 - [x] Batch 19: realms 2 and 3 (Enchanted Forest with mushrooms, Crystal Islands with crystal clusters), each with its own sky, music, castle colours, king, jester and balloon mix; realm picker on the title screen
 - [x] Batch 18: Jingles' colour lock puzzle at the gate, then a three-phase King boss fight
 - [x] Batch 17: dream currency, upgrade shop (horn reach, light wings, rainbow dash, dream magnet), saved progress

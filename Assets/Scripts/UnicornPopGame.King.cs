@@ -104,6 +104,7 @@ public sealed partial class UnicornPopGame
     {
         puzzleActive = false;
         puzzleDone = true;
+        SaveCheckpoint(realm.DreamGoal, 2, "the lock is open");
         lockBalloons.Clear();
         Banner("THE LOCK BREAKS!", realm.KingName + " rolls out his boss balloon...", new Color(1f, 0.55f, 0.85f), 3.5f);
         Sfx.Record();
