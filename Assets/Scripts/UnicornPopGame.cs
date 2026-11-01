@@ -6,13 +6,15 @@ public sealed class UnicornPopGame : MonoBehaviour
 {
     public const float CastleZ = 62f;
     public const float WallTopY = 9f;
+    private const float CrateX = 14f;
 
     private static readonly Color Sky = new Color(0.62f, 0.82f, 1f);
 
     private Camera cam;
     private Unicorn unicorn;
     private Transform jester;
-    private Vector3 jesterHome;
+    private Transform cannonBarrel;
+    private Transform cannonMuzzle;
     private readonly List<Transform> clouds = new List<Transform>();
     private GUIStyle hint;
 
@@ -42,6 +44,10 @@ public sealed class UnicornPopGame : MonoBehaviour
         unicorn = new GameObject("Unicorn").AddComponent<Unicorn>();
         unicorn.transform.SetParent(transform, false);
         unicorn.Build(new Vector3(0, 0, -5f), 0f);
+
+        var cannon = new GameObject("CannonController").AddComponent<Cannon>();
+        cannon.transform.SetParent(transform, false);
+        cannon.Build(world, jester, cannonBarrel, cannonMuzzle, unicorn.transform, CrateX, 9.8f, 5.5f);
         SnapCamera();
     }
 
@@ -194,9 +200,13 @@ public sealed class UnicornPopGame : MonoBehaviour
         Prim.Make(PrimitiveType.Cylinder, "Tube", barrel, new Vector3(0, 0.8f, 0), new Vector3(0.9f, 1.4f, 0.9f), iron);
         Prim.Make(PrimitiveType.Cylinder, "Muzzle", barrel, new Vector3(0, 2.2f, 0), new Vector3(1.15f, 0.15f, 1.15f), new Color(0.15f, 0.16f, 0.2f));
         Prim.Make(PrimitiveType.Sphere, "Breech", barrel, new Vector3(0, -0.2f, 0), Vector3.one * 0.95f, iron);
+        cannonBarrel = barrel;
+        cannonMuzzle = new GameObject("MuzzleTip").transform;
+        cannonMuzzle.SetParent(barrel, false);
+        cannonMuzzle.localPosition = new Vector3(0, 2.4f, 0);
 
         // Crate of balloons beside the cannon.
-        var crate = new Vector3(14f, WallTopY, z);
+        var crate = new Vector3(CrateX, WallTopY, z);
         Prim.Make(PrimitiveType.Cube, "Crate", world, crate + Vector3.up * 0.6f, new Vector3(1.8f, 1.2f, 1.8f), new Color(0.55f, 0.36f, 0.2f));
         var tops = new[] { new Color(1f, 0.35f, 0.45f), new Color(0.35f, 0.65f, 1f), new Color(0.45f, 0.9f, 0.5f), new Color(1f, 0.85f, 0.3f) };
         for (var i = 0; i < tops.Length; i++)
@@ -212,7 +222,6 @@ public sealed class UnicornPopGame : MonoBehaviour
         jester = new GameObject("Jester").transform;
         jester.SetParent(world, false);
         jester.position = pos;
-        jesterHome = pos;
         jester.rotation = Quaternion.Euler(0, 180f, 0);
 
         var skin = new Color(1f, 0.85f, 0.72f);
@@ -249,16 +258,6 @@ public sealed class UnicornPopGame : MonoBehaviour
             p.x += Time.deltaTime * 0.8f;
             if (p.x > 120f) p.x = -120f;
             c.position = p;
-        }
-
-        // The jester bounces and turns to look at the player.
-        var hop = Mathf.Abs(Mathf.Sin(Time.time * 3f)) * 0.3f;
-        jester.position = jesterHome + Vector3.up * hop;
-        var look = unicorn.transform.position - jester.position;
-        look.y = 0f;
-        if (look.sqrMagnitude > 0.01f)
-        {
-            jester.rotation = Quaternion.Slerp(jester.rotation, Quaternion.LookRotation(look), 1f - Mathf.Exp(-4f * Time.deltaTime));
         }
     }
 
