@@ -24,6 +24,7 @@ public sealed class Unicorn : MonoBehaviour
         public Vector3 Vel;
         public float Life;
         public float MaxLife;
+        public float Size = 0.22f;
     }
 
     private Transform model;
@@ -157,7 +158,7 @@ public sealed class Unicorn : MonoBehaviour
         {
             dashT = DashTime;
             dashCd = DashCooldown;
-            Emit(transform.position + Vector3.up, gold: true, 14, 3f);
+            RainbowBlast(fwd, 60, true);
         }
 
         float targetSpeed;
@@ -168,7 +169,7 @@ public sealed class Unicorn : MonoBehaviour
             targetSpeed = DashSpeed;
             response = 20f;
             vy *= Mathf.Exp(-8f * dt);
-            if (Random.value < 0.8f) Emit(transform.position + Vector3.up + fwd * -0.8f, gold: true, 1, 1f);
+            RainbowBlast(fwd, 3, false);
         }
         else
         {
@@ -297,6 +298,28 @@ public sealed class Unicorn : MonoBehaviour
         wings[1].localScale = new Vector3(wingSpread, 1f, 1f);
     }
 
+    private static readonly Color[] Rainbow =
+    {
+        new Color(1f, 0.25f, 0.3f), new Color(1f, 0.6f, 0.15f), new Color(1f, 0.95f, 0.3f),
+        new Color(0.3f, 0.95f, 0.45f), new Color(0.3f, 0.7f, 1f), new Color(0.7f, 0.4f, 1f),
+    };
+
+    // Sparkles shot backwards from the tail in a cone; the opening burst is bigger and faster.
+    private void RainbowBlast(Vector3 fwd, int count, bool burst)
+    {
+        var origin = transform.position + Vector3.up * 1.1f - fwd * 1.2f;
+        for (var i = 0; i < count; i++)
+        {
+            var size = Random.Range(0.18f, burst ? 0.5f : 0.38f);
+            var color = Rainbow[Random.Range(0, Rainbow.Length)];
+            var t = Prim.Make(PrimitiveType.Sphere, "Sparkle", null, origin + Random.insideUnitSphere * 0.4f, Vector3.one * size, color);
+            var dir = (-fwd + Random.insideUnitSphere * (burst ? 0.7f : 0.35f)).normalized;
+            var speed = Random.Range(6f, burst ? 22f : 12f);
+            var life = Random.Range(0.5f, burst ? 1.1f : 0.8f);
+            sparks.Add(new Spark { T = t, Vel = dir * speed, Life = life, MaxLife = life, Size = size });
+        }
+    }
+
     private void Emit(Vector3 pos, bool gold, int count, float speed)
     {
         for (var i = 0; i < count; i++)
@@ -320,8 +343,9 @@ public sealed class Unicorn : MonoBehaviour
                 sparks.RemoveAt(i);
                 continue;
             }
+            s.Vel *= Mathf.Exp(-2.5f * dt);
             s.T.position += s.Vel * dt;
-            s.T.localScale = Vector3.one * (0.22f * s.Life / s.MaxLife);
+            s.T.localScale = Vector3.one * (s.Size * s.Life / s.MaxLife);
         }
     }
 }
