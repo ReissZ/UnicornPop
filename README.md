@@ -33,7 +33,10 @@ Dreamland runs on happy wishes. Every wish becomes a balloon, and a balloon is m
 
 Each realm has its own castle, a jester-type launcher and a King. Save enough dreams to open the King's gate and beat his boss balloon to free the realm. Free every realm and the universe is saved.
 
-- **The End realm (final):** a Dream-Eater god (working title) holds the Unicorn Castle, Pip's home, captive in a void beyond the realms. Pip's herd is locked inside it. This is the final stage, in the spirit of Minecraft's End.
+- **The Dreamless Realm (final):** a dark, silent realm beyond all the others, where wishes go to be forgotten. The Dream-Eater (working title), a hungry void-god, holds the Unicorn Castle, Pip's home, captive here. Pip's herd is locked inside it, and every realm King has been quietly pressured by him.
+  - **Where Pip is from:** the Unicorn Castle is a floating crystal citadel above all the realms and the source of every wish. Pip fell to the Sunny Meadow when it was stolen. Each realm's castle was once a piece of it.
+  - **The goal:** beating each King frees a Wish-Shard. Collect them all to reach the Dreamless Realm, break the chains on the castle and free the herd, and the universe is saved.
+  - **Optional twist:** the Kings were hiding the wishes from the Dream-Eater, and King Bartholomew's wish for a friend was the Unicorn Castle's first wish, which is Pip.
 
 ## Progress
 
