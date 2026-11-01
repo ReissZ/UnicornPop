@@ -182,8 +182,8 @@ public sealed partial class UnicornPopGame
         GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
         GUI.color = Color.white;
         var cy = Screen.height * 0.5f;
-        Shadowed(new Rect(0, cy - 200 * k, Screen.width, 80 * k), realm.Name + " saved!", bigStyle, Mathf.RoundToInt(66 * k), new Color(1f, 0.9f, 0.4f));
-        Shadowed(new Rect(0, cy - 120 * k, Screen.width, 50 * k), realm.KingName + " is no longer worried.", midStyle, Mathf.RoundToInt(28 * k), Color.white);
+        Shadowed(new Rect(0, cy - 200 * k, Screen.width, 80 * k), (Realm.HasNext ? realm.Name + " saved!" : "The Unicorn Galaxy is saved!"), bigStyle, Mathf.RoundToInt(66 * k), new Color(1f, 0.9f, 0.4f));
+        Shadowed(new Rect(0, cy - 120 * k, Screen.width, 50 * k), (Realm.HasNext ? realm.KingName + " is no longer worried." : "Herdlight blazes again. Every dream is home, Pip."), midStyle, Mathf.RoundToInt(28 * k), Color.white);
 
         var s = 46 * k;
         for (var i = 0; i < 3; i++)
@@ -195,6 +195,6 @@ public sealed partial class UnicornPopGame
         Shadowed(new Rect(0, cy - 14 * k, Screen.width, 44 * k), "Score " + score + "   Dreams saved " + DreamSaver.Saved + "  (+" + stars * 10 + " star bonus)", midStyle, Mathf.RoundToInt(32 * k), Color.white);
         if (newRecord) Shadowed(new Rect(0, cy + 40 * k, Screen.width, 40 * k), "New high score!", midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.3f));
         DrawShop(k, cy + 130 * k);
-        Shadowed(new Rect(0, Screen.height - 40 * k, Screen.width, 30 * k), (Realm.HasNext ? "Press Enter for " + Realm.All[Realm.Index + 1].Name + "   -   R to replay" : "The Herdlight glows brighter...   Press R to play again"), midStyle, Mathf.RoundToInt(22 * k), Color.white);
+        Shadowed(new Rect(0, Screen.height - 40 * k, Screen.width, 30 * k), (Realm.HasNext ? "Press Enter for " + Realm.All[Realm.Index + 1].Name + "   -   R to replay" : "Every realm is free!   Press R to play again"), midStyle, Mathf.RoundToInt(22 * k), Color.white);
     }
 }

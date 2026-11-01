@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum SceneryKind { None, Mushrooms, Crystals }
+public enum SceneryKind { None, Mushrooms, Crystals, Spires, Candy, Void }
 
 // A realm is one castle, one Jester and one King. Saving enough dreams opens the King's gate.
 public sealed class Realm
@@ -65,6 +65,48 @@ public sealed class Realm
             },
             TreeCount = 60, PineEvery = 2, Scenery = SceneryKind.Crystals,
             Sky = new[] { 8, 9, 3, 4 },
+        },
+        new Realm
+        {
+            Name = "Storm Canyon", KingName = "King Thunderhoof the Tempest", JesterName = "Gale",
+            DreamGoal = 48, BossHp = 14, TempoScale = 1.25f, SpeedyMix = 2f, ArmoredMix = 1.5f,
+            Ground = new Color(0.75f, 0.5f, 0.38f), HillA = new Color(0.65f, 0.4f, 0.35f), HillB = new Color(0.55f, 0.38f, 0.45f),
+            Stone = new Color(0.6f, 0.5f, 0.55f), StoneDark = new Color(0.4f, 0.32f, 0.4f), Roof = new Color(0.35f, 0.4f, 0.9f),
+            Trees = new[]
+            {
+                new[] { new Color(0.5f, 0.4f, 0.35f), new Color(0.7f, 0.55f, 0.4f) },
+                new[] { new Color(0.4f, 0.35f, 0.45f), new Color(0.6f, 0.5f, 0.6f) },
+            },
+            TreeCount = 40, PineEvery = 2, Scenery = SceneryKind.Spires,
+            Sky = new[] { 10, 11, 11, 4 },
+        },
+        new Realm
+        {
+            Name = "Candy Clouds", KingName = "Queen Sprinkle the Sweet", JesterName = "Gumdrop",
+            DreamGoal = 54, BossHp = 16, TempoScale = 1.3f, SplitterMix = 2.2f, ArmoredMix = 1.3f,
+            Ground = new Color(1f, 0.75f, 0.88f), HillA = new Color(0.95f, 0.65f, 0.85f), HillB = new Color(0.85f, 0.7f, 0.98f),
+            Stone = new Color(1f, 0.9f, 0.95f), StoneDark = new Color(0.9f, 0.65f, 0.8f), Roof = new Color(0.95f, 0.45f, 0.6f),
+            Trees = new[]
+            {
+                new[] { new Color(1f, 0.6f, 0.75f), new Color(1f, 0.8f, 0.88f) },
+                new[] { new Color(0.6f, 0.85f, 1f), new Color(0.8f, 0.95f, 1f) },
+                new[] { new Color(1f, 0.9f, 0.55f), new Color(1f, 0.97f, 0.75f) },
+            },
+            TreeCount = 120, PineEvery = 2, Scenery = SceneryKind.Candy,
+            Sky = new[] { 12, 13, 13, 4 },
+        },
+        new Realm
+        {
+            Name = "The Dreamless Realm", KingName = "The Dream-Eater", JesterName = "Hush",
+            DreamGoal = 70, BossHp = 24, TempoScale = 1.35f, SpeedyMix = 1.8f, SplitterMix = 1.8f, ArmoredMix = 2f,
+            Ground = new Color(0.16f, 0.14f, 0.22f), HillA = new Color(0.12f, 0.1f, 0.2f), HillB = new Color(0.14f, 0.12f, 0.26f),
+            Stone = new Color(0.3f, 0.26f, 0.4f), StoneDark = new Color(0.18f, 0.15f, 0.28f), Roof = new Color(0.6f, 0.3f, 0.9f),
+            Trees = new[]
+            {
+                new[] { new Color(0.2f, 0.18f, 0.3f), new Color(0.3f, 0.26f, 0.42f) },
+            },
+            TreeCount = 25, PineEvery = 2, Scenery = SceneryKind.Void,
+            Sky = new[] { 14, 15, 15, 4 },
         },
     };
 

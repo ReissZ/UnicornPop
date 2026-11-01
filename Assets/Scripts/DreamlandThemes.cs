@@ -122,6 +122,54 @@ public sealed partial class Dreamland
             Light = C(1f, 1f, 1f), LightIntensity = 1.25f, LightPitch = 58f,
             AmbSky = C(0.65f, 0.8f, 1f), AmbEquator = C(0.85f, 0.9f, 1f), AmbGround = C(0.6f, 0.65f, 0.85f),
         },
+        new Theme
+        {
+            Name = "Ember Canyon",
+            Horizon = C(1f, 0.7f, 0.45f), Low = C(0.95f, 0.6f, 0.4f), Mid = C(0.75f, 0.45f, 0.45f), Top = C(0.4f, 0.3f, 0.5f),
+            SunTint = C(1f, 0.7f, 0.35f), Glow = 1.4f, SunPitch = 6f, Stars = 0.05f, Candy = 0f, Aurora = 0f, Rainbow = 0.2f,
+            Light = C(1f, 0.8f, 0.6f), LightIntensity = 1.0f, LightPitch = 26f,
+            AmbSky = C(0.7f, 0.5f, 0.45f), AmbEquator = C(0.9f, 0.6f, 0.4f), AmbGround = C(0.45f, 0.3f, 0.25f),
+        },
+        new Theme
+        {
+            Name = "Thunder Dusk",
+            Horizon = C(0.45f, 0.4f, 0.55f), Low = C(0.35f, 0.3f, 0.5f), Mid = C(0.22f, 0.2f, 0.38f), Top = C(0.1f, 0.1f, 0.25f),
+            SunTint = C(0.8f, 0.8f, 1f), Glow = 0.5f, SunPitch = 2f, Stars = 0.4f, Candy = 0f, Aurora = 0f, Rainbow = 0f,
+            Light = C(0.7f, 0.7f, 1f), LightIntensity = 0.6f, LightPitch = 50f,
+            AmbSky = C(0.35f, 0.35f, 0.5f), AmbEquator = C(0.4f, 0.35f, 0.5f), AmbGround = C(0.25f, 0.22f, 0.3f),
+        },
+        new Theme
+        {
+            Name = "Cotton Candy",
+            Horizon = C(1f, 0.85f, 0.95f), Low = C(1f, 0.8f, 0.92f), Mid = C(0.85f, 0.75f, 1f), Top = C(0.65f, 0.7f, 1f),
+            SunTint = C(1f, 0.95f, 0.85f), Glow = 1.3f, SunPitch = 10f, Stars = 0.1f, Candy = 1f, Aurora = 0f, Rainbow = 1f,
+            Light = C(1f, 0.95f, 0.98f), LightIntensity = 1.15f, LightPitch = 46f,
+            AmbSky = C(0.9f, 0.75f, 0.95f), AmbEquator = C(1f, 0.85f, 0.95f), AmbGround = C(0.8f, 0.6f, 0.8f),
+        },
+        new Theme
+        {
+            Name = "Sugar Sunset",
+            Horizon = C(1f, 0.75f, 0.7f), Low = C(1f, 0.6f, 0.75f), Mid = C(0.8f, 0.5f, 0.85f), Top = C(0.45f, 0.4f, 0.85f),
+            SunTint = C(1f, 0.7f, 0.6f), Glow = 1.5f, SunPitch = 12f, Stars = 0.2f, Candy = 1f, Aurora = 0f, Rainbow = 0.8f,
+            Light = C(1f, 0.8f, 0.75f), LightIntensity = 1.0f, LightPitch = 20f,
+            AmbSky = C(0.85f, 0.6f, 0.8f), AmbEquator = C(1f, 0.7f, 0.7f), AmbGround = C(0.7f, 0.45f, 0.6f),
+        },
+        new Theme
+        {
+            Name = "Hollow Sky",
+            Horizon = C(0.3f, 0.28f, 0.35f), Low = C(0.2f, 0.18f, 0.28f), Mid = C(0.12f, 0.1f, 0.2f), Top = C(0.05f, 0.04f, 0.1f),
+            SunTint = C(0.6f, 0.55f, 0.75f), Glow = 0.3f, SunPitch = -6f, Stars = 0.2f, Candy = 0f, Aurora = 0f, Rainbow = 0f,
+            Light = C(0.6f, 0.55f, 0.8f), LightIntensity = 0.5f, LightPitch = 56f,
+            AmbSky = C(0.25f, 0.22f, 0.32f), AmbEquator = C(0.3f, 0.25f, 0.38f), AmbGround = C(0.15f, 0.12f, 0.2f),
+        },
+        new Theme
+        {
+            Name = "Dying Stars",
+            Horizon = C(0.18f, 0.12f, 0.28f), Low = C(0.1f, 0.08f, 0.2f), Mid = C(0.06f, 0.05f, 0.14f), Top = C(0.02f, 0.02f, 0.07f),
+            SunTint = C(0.7f, 0.6f, 0.9f), Glow = 0.25f, SunPitch = -10f, Stars = 1f, Candy = 0f, Aurora = 0.6f, Rainbow = 0f,
+            Light = C(0.7f, 0.6f, 1f), LightIntensity = 0.45f, LightPitch = 60f,
+            AmbSky = C(0.2f, 0.15f, 0.3f), AmbEquator = C(0.25f, 0.2f, 0.35f), AmbGround = C(0.12f, 0.1f, 0.18f),
+        },
     };
 
     private const float ThemeBlendSeconds = 3f;
