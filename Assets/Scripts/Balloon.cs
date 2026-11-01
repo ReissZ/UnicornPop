@@ -40,6 +40,8 @@ public sealed class Balloon : MonoBehaviour
     public bool Ambient;
     private Vector3 home;
     public float HitCooldown;
+    // Index of a Jester-lock balloon, or -1 for an ordinary one.
+    public int PuzzleId = -1;
     private Vector3 vel;
     private Vector3 drift;
     private float phase;
@@ -252,10 +254,12 @@ public sealed class Balloon : MonoBehaviour
     }
 
     public void SetDrift(Vector3 d) => drift = d;
+    public void Kick(Vector3 v) => vel += v;
 
     // The Dream Magnet upgrade eases wishes toward the unicorn.
     public void Attract(Vector3 point, float speed, float dt)
     {
+        if (PuzzleId >= 0) return;
         if (Ambient) home = Vector3.MoveTowards(home, point, speed * dt);
         else transform.position = Vector3.MoveTowards(transform.position, point, speed * dt);
     }

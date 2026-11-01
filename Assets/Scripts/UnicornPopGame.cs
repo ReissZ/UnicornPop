@@ -726,6 +726,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
     private void ApplyMagnet()
     {
+        if (puzzleActive) UpdatePuzzle();
         var radius = Upgrades.MagnetRadius;
         if (radius <= 0f) return;
         var centre = unicorn.transform.position + Vector3.up * 1.8f;
@@ -766,6 +767,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
     private void PopBalloon(Balloon b)
     {
+        if (HandleLockPop(b)) return;
         var pos = b.transform.position;
         if (b.Kind == BalloonKind.Storm)
         {
@@ -797,7 +799,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
                 for (var i = Balloon.Active.Count - 1; i >= 0; i--)
                 {
                     var o = Balloon.Active[i];
-                    if (o == b || o.Kind == BalloonKind.Storm || o.Kind == BalloonKind.Boss || Vector3.Distance(o.transform.position, pos) > 14f) continue;
+                    if (o == b || o.PuzzleId >= 0 || o.Kind == BalloonKind.Storm || o.Kind == BalloonKind.Boss || Vector3.Distance(o.transform.position, pos) > 14f) continue;
                     points += combo;
                     effects.Burst(o.transform.position, o.Color, 14, 5f);
                     o.Pop();

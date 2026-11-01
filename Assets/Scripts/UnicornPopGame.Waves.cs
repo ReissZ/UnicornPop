@@ -57,8 +57,10 @@ public sealed partial class UnicornPopGame
         if (!gateOpen && DreamSaver.Saved >= realm.DreamGoal) OpenGate();
         if (!gateOpen) return;
 
+        if (!puzzleDone) return;
         if (bossDefeated) ClearRealm();
-        else if (boss == null)
+        else if (boss != null) UpdateKingFight();
+        else
         {
             // If the boss floated off, the King sends it back after a breather.
             bossRespawn -= Time.deltaTime;
@@ -69,12 +71,10 @@ public sealed partial class UnicornPopGame
     private void OpenGate()
     {
         gateOpen = true;
-        bossRespawn = 3f;
         kingGrump = 2f;
         Sfx.Record();
         effects.Text(unicorn.transform.position + Vector3.up * 4f, "The gate opens!", new Color(1f, 0.9f, 0.4f), 46);
-        Banner("THE KING'S GATE OPENS!", realm.KingName + " rolls out his boss balloon...", new Color(1f, 0.55f, 0.85f), 4f);
-        SpawnBoss();
+        StartPuzzle();
     }
 
     private void ClearRealm()
@@ -121,6 +121,7 @@ public sealed partial class UnicornPopGame
 
     private void DrawWaveHud(float k)
     {
+        DrawPuzzleHud(k);
         if (bannerT > 0f && !realmCleared)
         {
             var a = Mathf.Clamp01(bannerT * 2f);
