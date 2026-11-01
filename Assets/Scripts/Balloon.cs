@@ -253,6 +253,13 @@ public sealed class Balloon : MonoBehaviour
 
     public void SetDrift(Vector3 d) => drift = d;
 
+    // The Dream Magnet upgrade eases wishes toward the unicorn.
+    public void Attract(Vector3 point, float speed, float dt)
+    {
+        if (Ambient) home = Vector3.MoveTowards(home, point, speed * dt);
+        else transform.position = Vector3.MoveTowards(transform.position, point, speed * dt);
+    }
+
     // The boss squashes and is shoved away from the horn when it takes a hit.
     public void Hit(Vector3 dir)
     {

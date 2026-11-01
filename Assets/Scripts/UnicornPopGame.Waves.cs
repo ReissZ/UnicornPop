@@ -83,6 +83,7 @@ public sealed partial class UnicornPopGame
         cannon.Active = false;
         cannon.Remaining = 0;
         stars = hearts >= StartHearts ? 3 : hearts == 2 ? 2 : 1;
+        Upgrades.Bank(DreamSaver.Saved + stars * 10);
         var key = StarsKey + realm.Name;
         if (stars > PlayerPrefs.GetInt(key, 0))
         {
@@ -109,6 +110,7 @@ public sealed partial class UnicornPopGame
 
     private void UpdateRealmCleared()
     {
+        ShopInput();
         if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Return) || Pad.StartDown)
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
@@ -143,24 +145,51 @@ public sealed partial class UnicornPopGame
         Shadowed(new Rect(0, y - 26 * k, Screen.width, 22 * k), label, scoreStyle, Mathf.RoundToInt(17 * k), new Color(1f, 0.9f, 0.7f));
     }
 
+    private void ShopInput()
+    {
+        for (var i = 0; i < Upgrades.Names.Length; i++)
+        {
+            if (!Input.GetKeyDown(KeyCode.Alpha1 + i)) continue;
+            if (Upgrades.Buy(i)) { Sfx.Golden(); shopFlash = 1f; } else Sfx.Lose();
+        }
+    }
+
+    private float shopFlash;
+
+    private void DrawShop(float k, float top)
+    {
+        shopFlash = Mathf.Max(0f, shopFlash - Time.deltaTime);
+        Shadowed(new Rect(0, top, Screen.width, 34 * k), "Dream Shop   -   you have " + Upgrades.Wallet + " dreams", midStyle, Mathf.RoundToInt(26 * k), new Color(1f, 0.9f, 0.5f + shopFlash * 0.5f));
+        for (var i = 0; i < Upgrades.Names.Length; i++)
+        {
+            var lvl = Upgrades.Level(i);
+            var affordable = !Upgrades.Maxed(i) && Upgrades.Wallet >= Upgrades.Cost(i);
+            var cost = Upgrades.Maxed(i) ? "MAX" : Upgrades.Cost(i) + " dreams";
+            var text = "[" + (i + 1) + "] " + Upgrades.Names[i] + "  Lv " + lvl + "/" + Upgrades.MaxLevel + "  -  " + cost + "  (" + Upgrades.Blurbs[i] + ")";
+            var c = affordable ? Color.white : new Color(1f, 1f, 1f, 0.55f);
+            Shadowed(new Rect(0, top + (36 + i * 28) * k, Screen.width, 26 * k), text, scoreStyle, Mathf.RoundToInt(19 * k), c);
+        }
+    }
+
     private void DrawRealmCleared(float k)
     {
         GUI.color = new Color(0, 0, 0, 0.45f);
         GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
         GUI.color = Color.white;
         var cy = Screen.height * 0.5f;
-        Shadowed(new Rect(0, cy - 150 * k, Screen.width, 80 * k), realm.Name + " saved!", bigStyle, Mathf.RoundToInt(66 * k), new Color(1f, 0.9f, 0.4f));
-        Shadowed(new Rect(0, cy - 70 * k, Screen.width, 50 * k), realm.KingName + " is no longer worried.", midStyle, Mathf.RoundToInt(28 * k), Color.white);
+        Shadowed(new Rect(0, cy - 200 * k, Screen.width, 80 * k), realm.Name + " saved!", bigStyle, Mathf.RoundToInt(66 * k), new Color(1f, 0.9f, 0.4f));
+        Shadowed(new Rect(0, cy - 120 * k, Screen.width, 50 * k), realm.KingName + " is no longer worried.", midStyle, Mathf.RoundToInt(28 * k), Color.white);
 
         var s = 46 * k;
         for (var i = 0; i < 3; i++)
         {
             GUI.color = i < stars ? new Color(1f, 0.85f, 0.2f) : new Color(0f, 0f, 0f, 0.4f);
-            GUI.DrawTexture(new Rect(Screen.width * 0.5f - 1.5f * (s + 8 * k) + i * (s + 8 * k), cy - 15 * k, s, s), heartTex);
+            GUI.DrawTexture(new Rect(Screen.width * 0.5f - 1.5f * (s + 8 * k) + i * (s + 8 * k), cy - 70 * k, s, s), heartTex);
         }
         GUI.color = Color.white;
-        Shadowed(new Rect(0, cy + 44 * k, Screen.width, 44 * k), "Score " + score + "   Dreams saved " + DreamSaver.Saved, midStyle, Mathf.RoundToInt(32 * k), Color.white);
-        if (newRecord) Shadowed(new Rect(0, cy + 88 * k, Screen.width, 40 * k), "New high score!", midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.3f));
-        Shadowed(new Rect(0, cy + 135 * k, Screen.width, 40 * k), "More realms are coming...   Press R to play again", midStyle, Mathf.RoundToInt(24 * k), Color.white);
+        Shadowed(new Rect(0, cy - 14 * k, Screen.width, 44 * k), "Score " + score + "   Dreams saved " + DreamSaver.Saved + "  (+" + stars * 10 + " star bonus)", midStyle, Mathf.RoundToInt(32 * k), Color.white);
+        if (newRecord) Shadowed(new Rect(0, cy + 40 * k, Screen.width, 40 * k), "New high score!", midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.3f));
+        DrawShop(k, cy + 130 * k);
+        Shadowed(new Rect(0, Screen.height - 40 * k, Screen.width, 30 * k), "More realms are coming...   Press R to play again", midStyle, Mathf.RoundToInt(22 * k), Color.white);
     }
 }

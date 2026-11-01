@@ -31,7 +31,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     private const float RainbowPowerSeconds = 8f;
     private const float SlowPowerSeconds = 6f;
     private const float BoostPowerSeconds = 8f;
-    private const float HitRadius = 1.3f;
+    private static float HitRadius => 1.3f * Upgrades.HornReach;
 
     private Dreamland dreamland;
     private GameFeel feel;
@@ -462,6 +462,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
         if (gameOver)
         {
+            ShopInput();
             if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Return) || Pad.JumpDown || Pad.StartDown)
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -489,6 +490,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             comboTimer -= Time.deltaTime;
             if (comboTimer <= 0f) combo = 0;
         }
+        ApplyMagnet();
         CheckHornHits();
     }
 
@@ -722,6 +724,19 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         return Vector3.Distance(p, a + ab * t);
     }
 
+    private void ApplyMagnet()
+    {
+        var radius = Upgrades.MagnetRadius;
+        if (radius <= 0f) return;
+        var centre = unicorn.transform.position + Vector3.up * 1.8f;
+        foreach (var b in Balloon.Active)
+        {
+            if (b.Kind == BalloonKind.Storm || b.Kind == BalloonKind.Boss) continue;
+            if ((b.transform.position - centre).sqrMagnitude > radius * radius) continue;
+            b.Attract(centre, 2.2f, Time.deltaTime);
+        }
+    }
+
     // Armor takes a few separate horn hits; the last one pops it like any other balloon.
     private void HitArmored(Balloon b)
     {
@@ -855,6 +870,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         }
 
         gameOver = true;
+        Upgrades.Bank(DreamSaver.Saved);
         Music.SetDuck(0.4f);
         Music.SetBoss(false);
         starPower = rainbowPower = slowPower = boostPower = 0f;
@@ -1035,18 +1051,19 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
             GUI.color = Color.white;
             var cy = Screen.height * 0.5f;
-            Shadowed(new Rect(0, cy - 120 * k, Screen.width, 80 * k), "Game Over", bigStyle, Mathf.RoundToInt(72 * k), new Color(1f, 0.5f, 0.7f));
-            Shadowed(new Rect(0, cy - 30 * k, Screen.width, 50 * k), "Score " + score + "   Dreams " + DreamSaver.Saved, midStyle, Mathf.RoundToInt(40 * k), Color.white);
+            Shadowed(new Rect(0, cy - 190 * k, Screen.width, 80 * k), "Game Over", bigStyle, Mathf.RoundToInt(72 * k), new Color(1f, 0.5f, 0.7f));
+            Shadowed(new Rect(0, cy - 100 * k, Screen.width, 50 * k), "Score " + score + "   Dreams " + DreamSaver.Saved, midStyle, Mathf.RoundToInt(40 * k), Color.white);
             if (newRecord)
             {
                 var pulse = 1f + Mathf.Sin(Time.time * 6f) * 0.08f;
-                Shadowed(new Rect(0, cy + 22 * k, Screen.width, 40 * k), "New high score!", midStyle, Mathf.RoundToInt(32 * k * pulse), new Color(1f, 0.9f, 0.3f));
+                Shadowed(new Rect(0, cy - 48 * k, Screen.width, 40 * k), "New high score!", midStyle, Mathf.RoundToInt(32 * k * pulse), new Color(1f, 0.9f, 0.3f));
             }
             else
             {
-                Shadowed(new Rect(0, cy + 22 * k, Screen.width, 40 * k), "Best " + best, midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.5f));
+                Shadowed(new Rect(0, cy - 48 * k, Screen.width, 40 * k), "Best " + best, midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.5f));
             }
-            Shadowed(new Rect(0, cy + 80 * k, Screen.width, 40 * k), "Press R to play again", midStyle, Mathf.RoundToInt(26 * k), Color.white);
+            DrawShop(k, cy + 70 * k);
+            Shadowed(new Rect(0, Screen.height - 40 * k, Screen.width, 30 * k), "Press R to play again", midStyle, Mathf.RoundToInt(24 * k), Color.white);
         }
     }
 
@@ -1077,6 +1094,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         }
         if (best > 0)
         {
+            Shadowed(new Rect(0, 236 * k, Screen.width, 30 * k), "Dreams to spend: " + Upgrades.Wallet, midStyle, Mathf.RoundToInt(22 * k), new Color(0.8f, 0.9f, 1f));
             Shadowed(new Rect(0, 200 * k, Screen.width, 36 * k), "Best " + best, midStyle, Mathf.RoundToInt(28 * k), new Color(1f, 0.9f, 0.5f));
         }
     }

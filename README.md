@@ -56,5 +56,6 @@ Each realm has its own castle, a jester-type launcher and a King. Save enough dr
 - [x] Title screen cinematic: loop-the-loop flip and landing, shocked-eyebrows close-up, then quick zooms to the grinning king and the cackling jester (starts the game at any time)
 
 All models are built from Unity primitives in code, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).
+- [x] Batch 17: dream currency, upgrade shop (horn reach, light wings, rainbow dash, dream magnet), saved progress
 - [x] Batch 16: new balloon types (armoured needs 3 hits, speedy weaves fast, splitter breaks in two)
 - [x] Batch 15: realms (a dream meter fills as you save dreams, then the Kings gate opens; no timers; stars on clear)

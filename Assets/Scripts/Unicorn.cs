@@ -105,7 +105,7 @@ public sealed class Unicorn : MonoBehaviour
     public Transform HornTip { get; private set; }
     public Transform HornBase { get; private set; }
     public float Stamina01 => stamina / MaxStamina;
-    public float DashReady01 => 1f - Mathf.Clamp01(dashCd / DashCooldown);
+    public float DashReady01 => 1f - Mathf.Clamp01(dashCd / (DashCooldown * Upgrades.DashCooldownScale));
     // Power-ups, switched on and off by the game.
     public bool WingBoost;
     public bool RainbowTrail;
@@ -299,7 +299,7 @@ public sealed class Unicorn : MonoBehaviour
         if (dashPressed && dashCd <= 0f)
         {
             dashT = DashTime;
-            dashCd = DashCooldown;
+            dashCd = DashCooldown * Upgrades.DashCooldownScale;
             RainbowBlast(fwd, 60, true);
             Sfx.Dash();
         }
@@ -396,8 +396,9 @@ public sealed class Unicorn : MonoBehaviour
     {
         if (!WingBoost)
         {
-            if (stamina < FlapCost) return;
-            stamina -= FlapCost;
+            var cost = FlapCost * Upgrades.FlapCostScale;
+            if (stamina < cost) return;
+            stamina -= cost;
         }
         vy = Mathf.Min(Mathf.Max(vy, 0f) + FlapSpeed * (WingBoost ? 1.25f : 1f), 10f);
         flapT = 0f;
