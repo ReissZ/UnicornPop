@@ -10,6 +10,15 @@ public sealed class Unicorn : MonoBehaviour
     private const float DashTime = 0.28f;
     private const float DashCooldown = 1f;
     private const float JumpSpeed = 8.5f;
+    private const float ButtTime = 0.42f;
+    private const float ButtCooldown = 0.8f;
+    private float buttT, buttCd;
+    private bool buttStruck;
+
+    public event System.Action ButtStruck;
+    public bool Butting => buttT > 0f;
+    public float ButtReady01 => 1f - Mathf.Clamp01(buttCd / (ButtCooldown * Upgrades.ButtCooldownScale));
+    private float ButtLunge => buttT > 0f ? Mathf.Sin((1f - buttT / ButtTime) * Mathf.PI) : 0f;
     private const float FlapSpeed = 7.5f;
     private const float FlapCost = 4f;
     private const float Gravity = -12f;
@@ -268,6 +277,7 @@ public sealed class Unicorn : MonoBehaviour
         var spaceHeld = false;
         var dive = false;
         var dashPressed = false;
+        var buttPressed = false;
         if (Controllable)
         {
             if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) turn -= 1f;
@@ -278,6 +288,7 @@ public sealed class Unicorn : MonoBehaviour
             spaceHeld = Input.GetKey(KeyCode.Space);
             dive = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C);
             dashPressed = Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift);
+            buttPressed = Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.E) || Input.GetMouseButtonDown(0);
 
             // Gamepad: left stick walks and strafes, right stick turns.
             turn = Mathf.Clamp(turn + Pad.LookX, -1f, 1f);
@@ -289,6 +300,7 @@ public sealed class Unicorn : MonoBehaviour
             spaceHeld |= Pad.JumpHeld;
             dive |= Pad.DiveHeld;
             dashPressed |= Pad.DashDown;
+            buttPressed |= Pad.ButtDown;
         }
 
         yaw += turn * (grounded ? 130f : 150f) * dt;
@@ -296,6 +308,16 @@ public sealed class Unicorn : MonoBehaviour
 
         dashCd -= dt;
         flapCool -= dt;
+        buttCd -= dt;
+        if (buttT > 0f)
+        {
+            buttT -= dt;
+            if (!buttStruck && buttT < ButtTime * 0.62f)
+            {
+                buttStruck = true;
+                ButtStruck?.Invoke();
+            }
+        }
         if (dashPressed && dashCd <= 0f)
         {
             dashT = DashTime;
@@ -322,6 +344,15 @@ public sealed class Unicorn : MonoBehaviour
         var wanted = fwd * targetSpeed;
         if (dashT <= 0f) wanted += Quaternion.Euler(0, 90f, 0) * fwd * (strafe * (grounded ? GroundSpeed : AirSpeed) * 0.7f);
         hv = Vector3.Lerp(hv, wanted, 1f - Mathf.Exp(-response * dt));
+
+        if (buttPressed && buttCd <= 0f && buttT <= 0f)
+        {
+            buttT = ButtTime;
+            buttStruck = false;
+            buttCd = ButtCooldown * Upgrades.ButtCooldownScale;
+            hv += fwd * 10f;
+            Sfx.Dash();
+        }
 
         if (spaceDown)
         {
@@ -417,7 +448,7 @@ public sealed class Unicorn : MonoBehaviour
         var k = 1f - Mathf.Exp(-8f * dt);
         pitch = Mathf.Lerp(pitch, airborne ? targetPitch : 0f, k);
         roll = Mathf.Lerp(roll, targetRoll, k);
-        model.localRotation = Quaternion.Euler(pitch + Flip, 0, roll);
+        model.localRotation = Quaternion.Euler(pitch + Flip + ButtLunge * 38f, 0, roll);
 
         var planar = new Vector2(hv.x, hv.z).magnitude;
         var stepBefore = Mathf.FloorToInt(walkCycle / Mathf.PI);
@@ -428,7 +459,7 @@ public sealed class Unicorn : MonoBehaviour
             Sfx.Hoof((stepBefore % 2 == 0 ? 1f : 0.85f) * Random.Range(0.95f, 1.05f));
         }
         var bob = airborne ? 0f : Mathf.Abs(Mathf.Sin(walkCycle)) * Mathf.Min(planar / GroundSpeed, 1f) * 0.1f;
-        model.localPosition = new Vector3(0, bob, 0);
+        model.localPosition = new Vector3(0, bob - ButtLunge * 0.2f, ButtLunge * 0.9f);
         if (Mathf.Abs(Flip) > 0.01f)
         {
             // Tumble around the middle of the body instead of the hooves.

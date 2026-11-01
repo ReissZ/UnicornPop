@@ -20,6 +20,7 @@ public static class Pad
     public static bool JumpHeld => Input.GetKey(KeyCode.JoystickButton0) || Input.GetKey(KeyCode.JoystickButton1) || Input.GetKey(KeyCode.JoystickButton16);
 
     // Right bumper / R1
+    public static bool ButtDown => Input.GetKeyDown(KeyCode.JoystickButton2) || Input.GetKeyDown(KeyCode.JoystickButton3);
     public static bool DashDown => Input.GetKeyDown(KeyCode.JoystickButton5) || Input.GetKeyDown(KeyCode.JoystickButton14);
 
     // Left bumper / L1

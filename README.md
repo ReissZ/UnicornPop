@@ -13,6 +13,7 @@ A Unity 6 (6000.6.7f1) 3D game, built in small testable batches. A winged unicor
 | A / D or Left / Right | Turn |
 | Space | Jump, then flap in the air (hold to glide) |
 | Shift | Dash |
+| F, E or left click | Head-butt: a horn shockwave that pops nearby balloons, hits armour and the boss harder, and knocks storm balloons away (upgrade it in the shop) |
 | Ctrl or C | Dive |
 
 **Gamepad (Xbox / PS5):** left stick walks and strafes, right stick turns, A/Cross jumps and flaps, right bumper dashes, left bumper dives, Start restarts.
@@ -59,6 +60,7 @@ All models are built from Unity primitives in code, so there are no extra assets
 - [x] Batch 20: realms 4-6 (Storm Canyon, Candy Clouds, The Dreamless Realm) with new skies, scenery, kings and the galaxy-saved ending
 - [x] Batch 21: polish - each realm has its own accent colour (flags, windows, beacon, boss balloon) and King robes; title-screen realm map with stars
 - [x] Checkpoints: progress is saved at 1/3 and 2/3 of the dream meter, at the Jester's gate and when the lock breaks; after a game over, Enter continues from the checkpoint and R restarts the realm
+- [x] Head-butt move with a lunge animation and shockwave; new Head-Butt shop upgrade adds damage (clears armoured balloons and hurts the boss more), radius and faster recharge
 - [x] Batch 19: realms 2 and 3 (Enchanted Forest with mushrooms, Crystal Islands with crystal clusters), each with its own sky, music, castle colours, king, jester and balloon mix; realm picker on the title screen
 - [x] Batch 18: Jingles' colour lock puzzle at the gate, then a three-phase King boss fight
 - [x] Batch 17: dream currency, upgrade shop (horn reach, light wings, rainbow dash, dream magnet), saved progress

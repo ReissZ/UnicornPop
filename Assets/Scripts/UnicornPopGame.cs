@@ -123,6 +123,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         unicorn = new GameObject("Unicorn").AddComponent<Unicorn>();
         unicorn.transform.SetParent(transform, false);
         unicorn.Build(new Vector3(0, 0, StartZ), 0f);
+        unicorn.ButtStruck += OnButtStrike;
         new GameObject("LivingWorld").AddComponent<LivingWorld>().Build(world, unicorn.transform, CastleZ);
 
         // Scenery is seeded for a stable look; gameplay randomness is not.
@@ -609,7 +610,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             if (i >= Balloon.Active.Count) continue;
             var b = Balloon.Active[i];
             var c = b.transform.position;
-            var reach = HitRadius + (b.Kind == BalloonKind.Boss ? 2.4f : 0f);
+            var reach = HitRadius * (unicorn.Butting ? 1.4f : 1f) + (b.Kind == BalloonKind.Boss ? 2.4f : 0f);
             var hit = SegmentDistance(c, root, tip) < reach || SegmentDistance(c, prev, tip) < reach;
 
             // The rainbow trail pops anything it passes through.
@@ -697,11 +698,11 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         kingGrump = 0.9f;
     }
 
-    private void HitBoss(Balloon b)
+    private void HitBoss(Balloon b, int damage = 1)
     {
         if (bossHitCooldown > 0f) return;
         bossHitCooldown = 0.5f;
-        b.Hp--;
+        b.Hp -= damage;
         var pos = b.transform.position;
         var away = (pos - unicorn.transform.position).normalized;
         b.Hit(away);
@@ -762,6 +763,49 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     }
 
     // Armor takes a few separate horn hits; the last one pops it like any other balloon.
+    // The head-butt: a shockwave at the horn that pops everything nearby, hits armour and the boss harder, and knocks storm balloons away.
+    private void OnButtStrike()
+    {
+        if (gameOver || onTitle) return;
+        var tip = unicorn.HornTip.position;
+        var radius = Upgrades.ButtRadius;
+        var dmg = Upgrades.ButtDamage;
+        var gold = new Color(1f, 0.9f, 0.5f);
+        effects.Burst(tip, Color.white, 26, 9f, 0.5f);
+        effects.Burst(tip, gold, 20, 6f, 0.6f);
+        Sfx.Boom();
+        GameFeel.Shake(0.45f);
+        GameFeel.Freeze(0.05f);
+
+        var popped = 0;
+        for (var i = Balloon.Active.Count - 1; i >= 0; i--)
+        {
+            if (i >= Balloon.Active.Count) continue;
+            var b = Balloon.Active[i];
+            var pos = b.transform.position;
+            var boss = b.Kind == BalloonKind.Boss;
+            if (Vector3.Distance(pos, tip) > radius + (boss ? 2.4f : 0f)) continue;
+            if (b.PuzzleId >= 0)
+            {
+                if (puzzleActive && b.PuzzleId == lockOrder[lockStep]) PopBalloon(b);
+                continue;
+            }
+            if (b.Kind == BalloonKind.Storm) { b.Kick((pos - tip).normalized * 14f); continue; }
+            if (boss) { bossHitCooldown = 0f; HitBoss(b, dmg); continue; }
+            if (b.Kind == BalloonKind.Armored && b.Hp > dmg)
+            {
+                b.Hp -= dmg;
+                b.Hit((pos - tip).normalized);
+                effects.Burst(pos, new Color(0.8f, 0.85f, 0.95f), 14, 7f);
+                effects.Text(pos + Vector3.up * 1.5f, b.Hp + " more", new Color(0.85f, 0.9f, 1f), 24);
+                continue;
+            }
+            PopBalloon(b);
+            popped++;
+        }
+        if (popped >= 3) effects.Text(tip + Vector3.up * 2.5f, "SMASH x" + popped + "!", gold, 36);
+    }
+
     private void HitArmored(Balloon b)
     {
         if (b.HitCooldown > 0f) return;
@@ -1027,12 +1071,14 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             return;
         }
 
-        GUI.Label(new Rect(12, 8, 700, 26), "W/S move   A/D turn   Space jump / flap (hold to glide)   Shift dash   Ctrl or C dive", hint);
+        GUI.Label(new Rect(12, 8, 700, 26), "W/S move   A/D turn   Space jump / flap (hold to glide)   Shift dash   F / click head-butt   Ctrl or C dive", hint);
         DrawBar(12, 40, 160, 12, unicorn.Stamina01, new Color(0.5f, 0.9f, 1f));
         DrawBar(12, 58, 160, 8, unicorn.DashReady01, new Color(1f, 0.85f, 0.3f));
 
-        GUI.Label(new Rect(12, 72, 240, 26), realm.Name, hint);
-        GUI.Label(new Rect(12, 92, 240, 26), "Dreams saved " + DreamSaver.Saved, hint);
+        DrawBar(12, 70, 160, 8, unicorn.ButtReady01, new Color(1f, 0.6f, 0.85f));
+
+        GUI.Label(new Rect(12, 82, 240, 26), realm.Name, hint);
+        GUI.Label(new Rect(12, 102, 240, 26), "Dreams saved " + DreamSaver.Saved, hint);
         DrawCompass(k);
         DrawWaveHud(k);
 
@@ -1112,7 +1158,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         {
             "W / S  fly forward / back        A / D  turn",
             "Space  jump, then flap (hold to glide)",
-            "Shift  rainbow dash        Ctrl or C  dive",
+            "Shift  rainbow dash        F or click  head-butt (pops everything near the horn)        Ctrl or C  dive",
             "Gold x5, rainbow chain-pops, heart heals, star = magnet. Avoid the grumpy storm balloons!",
             "Fly into glowing orbs for power-ups. Beat the crowned boss balloon with several hits!",
         };

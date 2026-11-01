@@ -7,16 +7,17 @@ public static class Upgrades
     private const string WalletKey = "UnicornPopDreams";
     private const string LevelKey = "UnicornPopUpg_";
 
-    public static readonly string[] Names = { "Horn Reach", "Light Wings", "Rainbow Dash", "Dream Magnet" };
+    public static readonly string[] Names = { "Horn Reach", "Light Wings", "Rainbow Dash", "Dream Magnet", "Head-Butt" };
     public static readonly string[] Blurbs =
     {
         "A wider horn pops more",
         "Flaps cost less stamina",
         "Dash recharges faster",
         "Wishes drift toward you",
+        "Harder, wider head-butts (F / click)",
     };
 
-    public const int Reach = 0, Wings = 1, Dash = 2, Magnet = 3;
+    public const int Reach = 0, Wings = 1, Dash = 2, Magnet = 3, Butt = 4;
 
     public static int Wallet => PlayerPrefs.GetInt(WalletKey, 0);
     public static int Level(int i) => PlayerPrefs.GetInt(LevelKey + i, 0);
@@ -42,5 +43,8 @@ public static class Upgrades
     public static float HornReach => 1f + 0.12f * Level(Reach);
     public static float FlapCostScale => 1f - 0.14f * Level(Wings);
     public static float DashCooldownScale => 1f - 0.13f * Level(Dash);
+    public static int ButtDamage => 1 + Level(Butt) / 2;
+    public static float ButtRadius => 3.2f + 0.5f * Level(Butt);
+    public static float ButtCooldownScale => 1f - 0.08f * Level(Butt);
     public static float MagnetRadius => Level(Magnet) == 0 ? 0f : 3f + 2.2f * Level(Magnet);
 }
