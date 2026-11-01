@@ -26,5 +26,12 @@ Flaps use stamina (blue bar); the dash cooldown is the yellow bar.
 - [x] Batch 3: horn popping, score, combo, golden balloons, hearts
 - [x] Batch 4: title screen, saved high score, sound, fireworks
 - [x] Batch 5: difficulty ramp (levels) and a cheering king
+- [ ] Batch 6: dreamland scenery (gradient sky, sun, rainbow, floating islands, pond, flowers, winding path)
+- [ ] Batch 7: living world (butterflies, fireflies, birds, castle banners, glowing windows, drawbridge)
+- [ ] Batch 8: new balloons (rainbow, heart, star, storm)
+- [ ] Batch 9: power-ups and a giant boss balloon
+- [ ] Batch 10: level themes (sunset, night, candy clouds, aurora) with level banners
+- [ ] Batch 11: dreamy procedural music and ambience
+- [ ] Batch 12: game feel (screen shake, slow-mo, speed lines, hoofprints, pastel HUD)
 
 All models are built from Unity primitives in code, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).

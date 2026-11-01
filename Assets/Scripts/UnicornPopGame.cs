@@ -9,8 +9,6 @@ public sealed class UnicornPopGame : MonoBehaviour
     public const float WallTopY = 9f;
     private const float CrateX = 14f;
 
-    private static readonly Color Sky = new Color(0.62f, 0.82f, 1f);
-
     private Camera cam;
     private Unicorn unicorn;
     private Transform jester;
@@ -89,6 +87,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         BuildClouds(world);
         BuildCastle(world);
         BuildCannonAndJester(world);
+        new GameObject("Dreamland").AddComponent<Dreamland>().Build(world, cam);
 
         unicorn = new GameObject("Unicorn").AddComponent<Unicorn>();
         unicorn.transform.SetParent(transform, false);
@@ -129,18 +128,20 @@ public sealed class UnicornPopGame : MonoBehaviour
     {
         var sun = new GameObject("Sun").AddComponent<Light>();
         sun.type = LightType.Directional;
-        sun.color = new Color(1f, 0.96f, 0.85f);
+        sun.color = new Color(1f, 0.92f, 0.78f);
         sun.intensity = 1.15f;
         sun.shadows = LightShadows.Soft;
         sun.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
-        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.55f, 0.62f, 0.78f);
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(0.6f, 0.66f, 0.95f);
+        RenderSettings.ambientEquatorColor = new Color(0.85f, 0.75f, 0.85f);
+        RenderSettings.ambientGroundColor = new Color(0.5f, 0.6f, 0.45f);
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogColor = Sky;
-        RenderSettings.fogStartDistance = 45f;
-        RenderSettings.fogEndDistance = 190f;
+        RenderSettings.fogColor = Dreamland.Horizon;
+        RenderSettings.fogStartDistance = 60f;
+        RenderSettings.fogEndDistance = 300f;
     }
 
     private void BuildCamera()
@@ -157,13 +158,12 @@ public sealed class UnicornPopGame : MonoBehaviour
         cam.nearClipPlane = 0.3f;
         cam.farClipPlane = 400f;
         cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = Sky;
+        cam.backgroundColor = Dreamland.Horizon;
     }
 
     private void BuildGround(Transform world)
     {
         Prim.Make(PrimitiveType.Cube, "Ground", world, new Vector3(0, -0.5f, 30f), new Vector3(600f, 1f, 600f), new Color(0.45f, 0.78f, 0.4f));
-        Prim.Make(PrimitiveType.Cube, "Path", world, new Vector3(0, 0.02f, 25f), new Vector3(5f, 0.04f, 60f), new Color(0.9f, 0.82f, 0.6f));
 
         var hillColors = new[] { new Color(0.4f, 0.72f, 0.4f), new Color(0.36f, 0.66f, 0.45f) };
         for (var i = 0; i < 14; i++)
@@ -184,6 +184,7 @@ public sealed class UnicornPopGame : MonoBehaviour
             var yaw = Random.Range(0f, 360f);
             var scale = Random.Range(0.85f, 1.5f);
             var palette = TreePalettes[Random.Range(0, TreePalettes.Length)];
+            if (Dreamland.InPond(x, z)) continue;
             if (i % 3 == 0) BuildPine(world, pos, scale, palette);
             else BuildOak(world, pos, scale, yaw, palette);
         }
@@ -205,7 +206,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     };
 
     // Stacked cones that get narrower toward the top, on a thin trunk.
-    private static void BuildPine(Transform world, Vector3 pos, float scale, Color[] palette)
+    internal static void BuildPine(Transform world, Vector3 pos, float scale, Color[] palette)
     {
         var tree = new GameObject("Pine").transform;
         tree.SetParent(world, false);
@@ -222,7 +223,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     }
 
     // Flared trunk, a couple of branches and a canopy made of several overlapping blobs.
-    private static void BuildOak(Transform world, Vector3 pos, float scale, float yaw, Color[] palette)
+    internal static void BuildOak(Transform world, Vector3 pos, float scale, float yaw, Color[] palette)
     {
         var tree = new GameObject("Oak").transform;
         tree.SetParent(world, false);
