@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum BalloonKind { Normal, Golden, Rainbow, Heart, Star, Storm, Boss }
+public enum BalloonKind { Normal, Golden, Rainbow, Heart, Star, Storm, Boss, Armored, Speedy, Splitter }
 
 // A balloon launched from the cannon. Air drag turns the throw into a slow float that eventually leaves the sky.
 public sealed class Balloon : MonoBehaviour
@@ -39,6 +39,7 @@ public sealed class Balloon : MonoBehaviour
     // Ambient balloons hover in place and never escape.
     public bool Ambient;
     private Vector3 home;
+    public float HitCooldown;
     private Vector3 vel;
     private Vector3 drift;
     private float phase;
@@ -60,6 +61,9 @@ public sealed class Balloon : MonoBehaviour
             case BalloonKind.Star: return new Color(0.5f, 0.92f, 1f);
             case BalloonKind.Storm: return new Color(0.32f, 0.26f, 0.42f);
             case BalloonKind.Boss: return new Color(0.95f, 0.45f, 0.85f);
+            case BalloonKind.Armored: return new Color(0.62f, 0.7f, 0.85f);
+            case BalloonKind.Speedy: return new Color(1f, 0.6f, 0.2f);
+            case BalloonKind.Splitter: return new Color(0.4f, 0.9f, 0.65f);
             default: return RandomColor();
         }
     }
@@ -119,6 +123,34 @@ public sealed class Balloon : MonoBehaviour
                 Prim.Make(PrimitiveType.Cube, "Tooth", root, new Vector3(0, -0.2f, -0.86f), new Vector3(0.14f, 0.1f, 0.04f), white);
                 knotY = -1.05f;
                 break;
+            case BalloonKind.Armored:
+                Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.7f, 1.95f, 1.7f), color);
+                Prim.Make(PrimitiveType.Cylinder, "Plate", root, new Vector3(0, 0.1f, 0), new Vector3(1.78f, 0.22f, 1.78f), new Color(0.45f, 0.5f, 0.62f));
+                Prim.Make(PrimitiveType.Cylinder, "Plate", root, new Vector3(0, -0.55f, 0), new Vector3(1.45f, 0.18f, 1.45f), new Color(0.45f, 0.5f, 0.62f));
+                for (var i = 0; i < 8; i++)
+                {
+                    var a = i * 45f * Mathf.Deg2Rad;
+                    Prim.Make(PrimitiveType.Sphere, "Stud", root, new Vector3(Mathf.Sin(a) * 0.9f, 0.1f, -Mathf.Cos(a) * 0.9f), Vector3.one * 0.16f, new Color(0.95f, 0.85f, 0.4f));
+                }
+                Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.4f, 0.55f, -0.62f), new Vector3(0.3f, 0.4f, 0.2f), white);
+                break;
+            case BalloonKind.Speedy:
+                Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.1f, 1.45f, 1.1f), color);
+                foreach (var sd in new[] { -1f, 1f })
+                {
+                    Prim.Make(PrimitiveType.Sphere, "Wing", root, new Vector3(0.7f * sd, 0.15f, 0), new Vector3(0.75f, 0.14f, 0.4f), white, new Vector3(0, 0, 25f * sd));
+                }
+                Prim.Cone("Streak", root, new Vector3(0, 1.15f, 0), new Vector3(0.5f, 1.3f, 0.5f), new Color(1f, 0.9f, 0.5f));
+                Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.25f, 0.3f, -0.42f), new Vector3(0.2f, 0.3f, 0.14f), white);
+                knotY = -0.8f;
+                break;
+            case BalloonKind.Splitter:
+                Prim.Make(PrimitiveType.Sphere, "Body", root, new Vector3(-0.42f, 0f, 0), new Vector3(1.15f, 1.4f, 1.15f), color);
+                Prim.Make(PrimitiveType.Sphere, "Body", root, new Vector3(0.42f, 0f, 0), new Vector3(1.15f, 1.4f, 1.15f), color * 0.85f);
+                Prim.Make(PrimitiveType.Cube, "Seam", root, new Vector3(0, 0f, -0.2f), new Vector3(0.1f, 1.5f, 0.5f), white);
+                Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.7f, 0.3f, -0.45f), new Vector3(0.22f, 0.32f, 0.14f), white);
+                knotY = -0.95f;
+                break;
             case BalloonKind.Storm:
                 Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.7f, 1.9f, 1.7f), color);
                 Prim.Make(PrimitiveType.Sphere, "Puff", root, new Vector3(-0.55f, 0.75f, 0), new Vector3(0.9f, 0.6f, 0.9f), color * 1.25f);
@@ -162,6 +194,8 @@ public sealed class Balloon : MonoBehaviour
         b.vel = velocity;
         b.drift = new Vector3(Random.Range(-0.6f, 0.6f), Random.Range(1.2f, 2.0f) * RiseScale, Random.Range(-0.6f, 0.2f));
         b.phase = Random.value * 6.28f;
+        if (kind == BalloonKind.Armored) b.Hp = b.MaxHp = 3;
+        if (kind == BalloonKind.Speedy) b.drift *= 1.9f;
         return b;
     }
 
@@ -188,7 +222,10 @@ public sealed class Balloon : MonoBehaviour
         {
             vel = Vector3.Lerp(vel, drift, 1f - Mathf.Exp(-Drag * dt));
             transform.position += vel * dt;
+            // Speedy balloons weave side to side.
+            if (Kind == BalloonKind.Speedy) transform.position += Vector3.right * (Mathf.Cos(Time.time * 4f + phase) * 5f * dt);
         }
+        HitCooldown -= Time.deltaTime;
         transform.rotation = Quaternion.Euler(Mathf.Sin(Time.time * 1.7f + phase) * 7f, 0, Mathf.Cos(Time.time * 1.3f + phase) * 7f);
 
         if (Effects.Instance != null && Random.value < 0.25f)

@@ -596,6 +596,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             if (!hit) continue;
 
             if (b.Kind == BalloonKind.Boss) HitBoss(b);
+            else if (b.Kind == BalloonKind.Armored && b.Hp > 1) HitArmored(b);
             else PopBalloon(b);
         }
     }
@@ -721,6 +722,33 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         return Vector3.Distance(p, a + ab * t);
     }
 
+    // Armor takes a few separate horn hits; the last one pops it like any other balloon.
+    private void HitArmored(Balloon b)
+    {
+        if (b.HitCooldown > 0f) return;
+        b.HitCooldown = 0.35f;
+        b.Hp--;
+        var pos = b.transform.position;
+        b.Hit((pos - unicorn.transform.position).normalized);
+        effects.Burst(pos, new Color(0.8f, 0.85f, 0.95f), 12, 6f);
+        effects.Text(pos + Vector3.up * 1.5f, b.Hp + " more", new Color(0.85f, 0.9f, 1f), 24);
+        GameFeel.Shake(0.25f);
+        Sfx.Pop(combo + 2);
+    }
+
+    // A splitter breaks into two small balloons that fly apart.
+    private void SplitBalloon(Balloon b)
+    {
+        var pos = b.transform.position;
+        for (var i = 0; i < 2; i++)
+        {
+            var side = i == 0 ? -1f : 1f;
+            var child = Balloon.Spawn(transform, pos + Vector3.right * side * 0.6f, new Vector3(side * 6f, 3f, 0f), BalloonKind.Normal, b.Color);
+            child.transform.localScale = Vector3.one * 0.7f;
+        }
+        effects.Text(pos + Vector3.up * 2.4f, "SPLIT!", new Color(0.4f, 0.95f, 0.7f), 26);
+    }
+
     private void PopBalloon(Balloon b)
     {
         var pos = b.transform.position;
@@ -738,8 +766,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
         combo = Mathf.Min(MaxCombo, comboTimer > 0f ? combo + 1 : 1);
         comboTimer = ComboWindow;
-        var special = b.Kind != BalloonKind.Normal;
-        var points = (b.Golden ? 5 : 1) * combo;
+        var special = b.Kind != BalloonKind.Normal && b.Kind != BalloonKind.Armored && b.Kind != BalloonKind.Speedy && b.Kind != BalloonKind.Splitter;
+        var points = (b.Golden ? 5 : b.Kind == BalloonKind.Armored ? 3 : b.Kind == BalloonKind.Speedy ? 2 : 1) * combo;
         var textColor = b.Golden ? Balloon.Gold : Color.white;
         var label = "";
 
@@ -794,6 +822,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         GameFeel.Shake(special ? 0.3f : 0.1f + combo * 0.02f);
         if (special || combo >= 4) kingCheer = 0.8f;
         DreamSaver.Release(pos, b.Color);
+        if (b.Kind == BalloonKind.Splitter) SplitBalloon(b);
         b.Pop();
     }
 
@@ -808,7 +837,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             return;
         }
         // Only ordinary balloons count against you; bonus and storm balloons can float away.
-        if (gameOver || b.Kind != BalloonKind.Normal) return;
+        if (gameOver || (b.Kind != BalloonKind.Normal && b.Kind != BalloonKind.Armored)) return;
         LoseHeart(b.transform.position, "Escaped!");
     }
 

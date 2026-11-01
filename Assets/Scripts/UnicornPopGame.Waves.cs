@@ -40,6 +40,9 @@ public sealed partial class UnicornPopGame
         cannon.RainbowChance = p > 0.15f ? 0.05f : 0f;
         cannon.StarChance = p > 0.25f ? 0.04f : 0f;
         cannon.StormChance = p > 0.45f ? 0.06f + 0.08f * p : 0f;
+        cannon.SpeedyChance = p > 0.1f ? 0.05f + 0.05f * p : 0f;
+        cannon.SplitterChance = p > 0.25f ? 0.06f : 0f;
+        cannon.ArmoredChance = p > 0.35f ? 0.05f + 0.06f * p : 0f;
         Balloon.RiseScale = 1f + 0.3f * p;
 
         var theme = p < 0.3f ? 0 : p < 0.6f ? 1 : p < 0.85f ? 2 : 4;
