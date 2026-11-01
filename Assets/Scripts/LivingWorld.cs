@@ -9,6 +9,7 @@ public sealed class LivingWorld : MonoBehaviour
         public Transform Root, WingL, WingR;
         public Vector3 Home, Vel;
         public float Phase, Scare;
+        public Color Dust;
     }
 
     private sealed class Bird
@@ -37,6 +38,44 @@ public sealed class LivingWorld : MonoBehaviour
         m.EnableKeyword("_EMISSION");
         m.SetColor("_EmissionColor", color * strength);
         return m;
+    }
+
+    private static readonly Dictionary<Color, Material> GlowCache = new Dictionary<Color, Material>();
+
+    private static Material CachedGlow(Color color, float strength)
+    {
+        if (!GlowCache.TryGetValue(color, out var m))
+        {
+            m = Glow(color, strength);
+            GlowCache[color] = m;
+        }
+        return m;
+    }
+
+    private static Transform Part(Transform parent, PrimitiveType type, Vector3 pos, Vector3 scale, Material mat, Vector3 euler = default)
+    {
+        var t = Prim.Make(type, "Part", parent, pos, scale, Color.white, euler);
+        t.GetComponent<Renderer>().sharedMaterial = mat;
+        return t;
+    }
+
+    // Two-toned wing pair: a large forewing and a smaller hindwing, with glowing spots and a bright rim.
+    private static Transform MagicWing(Transform parent, float side, Color main, Color accent)
+    {
+        var pivot = new GameObject("Wing").transform;
+        pivot.SetParent(parent, false);
+        var mainMat = CachedGlow(main, 0.45f);
+        var accentMat = CachedGlow(accent, 0.8f);
+        var rimMat = CachedGlow(Color.Lerp(main, Color.white, 0.7f), 1.1f);
+
+        Part(pivot, PrimitiveType.Sphere, new Vector3(side * 0.42f, 0, 0.16f), new Vector3(0.86f, 0.03f, 0.62f), mainMat, new Vector3(0, side * 18f, 0));
+        Part(pivot, PrimitiveType.Sphere, new Vector3(side * 0.62f, 0.004f, 0.2f), new Vector3(0.5f, 0.03f, 0.4f), accentMat, new Vector3(0, side * 18f, 0));
+        Part(pivot, PrimitiveType.Sphere, new Vector3(side * 0.3f, 0, -0.26f), new Vector3(0.52f, 0.03f, 0.4f), accentMat, new Vector3(0, -side * 20f, 0));
+        Part(pivot, PrimitiveType.Sphere, new Vector3(side * 0.22f, 0.004f, -0.3f), new Vector3(0.28f, 0.03f, 0.22f), mainMat, new Vector3(0, -side * 20f, 0));
+        Part(pivot, PrimitiveType.Sphere, new Vector3(side * 0.72f, 0.01f, 0.3f), Vector3.one * 0.1f, rimMat);
+        Part(pivot, PrimitiveType.Sphere, new Vector3(side * 0.5f, 0.01f, 0.1f), Vector3.one * 0.07f, rimMat);
+        Part(pivot, PrimitiveType.Sphere, new Vector3(side * 0.4f, 0.01f, -0.34f), Vector3.one * 0.07f, rimMat);
+        return pivot;
     }
 
     private static Transform Wing(Transform parent, float side, Color color)
@@ -69,14 +108,24 @@ public sealed class LivingWorld : MonoBehaviour
             var root = new GameObject("Butterfly").transform;
             root.SetParent(world, false);
             var c = colors[i % colors.Length];
-            Prim.Make(PrimitiveType.Capsule, "Body", root, Vector3.zero, new Vector3(0.07f, 0.12f, 0.07f), new Color(0.25f, 0.2f, 0.3f), new Vector3(90, 0, 0));
+            var accent = colors[(i + 2) % colors.Length];
+            var bodyMat = CachedGlow(new Color(0.35f, 0.25f, 0.5f), 0.2f);
+            Part(root, PrimitiveType.Sphere, new Vector3(0, 0, 0.14f), new Vector3(0.09f, 0.09f, 0.1f), bodyMat);
+            Part(root, PrimitiveType.Capsule, new Vector3(0, 0, -0.04f), new Vector3(0.07f, 0.13f, 0.07f), bodyMat, new Vector3(90, 0, 0));
+            Part(root, PrimitiveType.Sphere, new Vector3(0, 0, -0.2f), new Vector3(0.06f, 0.06f, 0.14f), bodyMat);
+            foreach (var sd in new[] { -1f, 1f })
+            {
+                Part(root, PrimitiveType.Cylinder, new Vector3(0.05f * sd, 0.05f, 0.27f), new Vector3(0.012f, 0.1f, 0.012f), bodyMat, new Vector3(60, 0, -20f * sd));
+                Part(root, PrimitiveType.Sphere, new Vector3(0.085f * sd, 0.1f, 0.36f), Vector3.one * 0.035f, CachedGlow(Color.white, 1.4f));
+            }
             var b = new Butterfly
             {
                 Root = root,
-                WingL = Wing(root, -1f, c),
-                WingR = Wing(root, 1f, c),
+                WingL = MagicWing(root, -1f, c, accent),
+                WingR = MagicWing(root, 1f, c, accent),
                 Home = new Vector3(Random.Range(-40f, 40f), Random.Range(1f, 4f), Random.Range(-20f, 50f)),
                 Phase = Random.Range(0f, 6.3f),
+                Dust = c,
             };
             root.position = b.Home;
             butterflies.Add(b);
@@ -212,6 +261,11 @@ public sealed class LivingWorld : MonoBehaviour
             b.Root.position = p;
             if (b.Vel.sqrMagnitude > 0.05f) b.Root.rotation = Quaternion.Slerp(b.Root.rotation, Quaternion.LookRotation(new Vector3(b.Vel.x, 0, b.Vel.z) + Vector3.forward * 0.001f), 4f * dt);
             var flap = Mathf.Sin(t * (b.Scare > 0f ? 26f : 14f) + b.Phase) * 55f;
+            // Faint glittering fairy dust trails behind each butterfly.
+            if (Effects.Instance != null && Random.value < dt * (b.Scare > 0f ? 10f : 2.5f))
+            {
+                Effects.Instance.Burst(b.Root.position - b.Root.forward * 0.2f, Color.Lerp(b.Dust, Color.white, 0.5f), 1, 0.3f, 0.9f);
+            }
             b.WingL.localRotation = Quaternion.Euler(0, 0, -flap);
             b.WingR.localRotation = Quaternion.Euler(0, 0, flap);
         }
