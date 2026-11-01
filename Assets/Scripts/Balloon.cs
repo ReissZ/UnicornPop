@@ -36,6 +36,9 @@ public sealed class Balloon : MonoBehaviour
         new Color(1f, 0.5f, 0.8f),
     };
 
+    // Ambient balloons hover in place and never escape.
+    public bool Ambient;
+    private Vector3 home;
     private Vector3 vel;
     private Vector3 drift;
     private float phase;
@@ -162,14 +165,30 @@ public sealed class Balloon : MonoBehaviour
         return b;
     }
 
+    public static Balloon SpawnAmbient(Transform parent, Vector3 position, BalloonKind kind, Color color)
+    {
+        var b = Spawn(parent, position, Vector3.zero, kind, color);
+        b.Ambient = true;
+        b.home = position;
+        return b;
+    }
+
     private void OnEnable() => Active.Add(this);
     private void OnDisable() => Active.Remove(this);
 
     private void Update()
     {
         var dt = Time.deltaTime * TimeScale;
-        vel = Vector3.Lerp(vel, drift, 1f - Mathf.Exp(-Drag * dt));
-        transform.position += vel * dt;
+        if (Ambient)
+        {
+            var bt = Time.time * 0.5f + phase;
+            transform.position = home + new Vector3(Mathf.Sin(bt * 0.8f) * 1.2f, Mathf.Sin(bt * 1.3f) * 0.9f, Mathf.Cos(bt * 0.7f) * 1.2f);
+        }
+        else
+        {
+            vel = Vector3.Lerp(vel, drift, 1f - Mathf.Exp(-Drag * dt));
+            transform.position += vel * dt;
+        }
         transform.rotation = Quaternion.Euler(Mathf.Sin(Time.time * 1.7f + phase) * 7f, 0, Mathf.Cos(Time.time * 1.3f + phase) * 7f);
 
         if (Effects.Instance != null && Random.value < 0.25f)

@@ -99,6 +99,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         gameObject.AddComponent<Music>();
         feel = gameObject.AddComponent<GameFeel>();
         gameObject.AddComponent<DreamSaver>();
+        gameObject.AddComponent<DreamBalloons>();
         heartTex = MakeHeart();
         Balloon.Escaped += OnBalloonEscaped;
 
@@ -129,6 +130,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         cannon.Active = !onTitle;
         GameFeel.Setup(cam, unicorn);
         DreamSaver.Setup(unicorn);
+        DreamBalloons.Setup(unicorn);
         BeginTitle();
         SnapCamera();
     }

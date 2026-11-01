@@ -5,16 +5,16 @@ using UnityEngine;
 public sealed class Unicorn : MonoBehaviour
 {
     private const float GroundSpeed = 7f;
-    private const float AirSpeed = 9f;
+    private const float AirSpeed = 14f;
     private const float DashSpeed = 26f;
     private const float DashTime = 0.28f;
     private const float DashCooldown = 1f;
     private const float JumpSpeed = 8.5f;
-    private const float FlapSpeed = 6.5f;
-    private const float FlapCost = 12f;
-    private const float Gravity = -18f;
-    private const float GlideFall = -2.5f;
-    private const float MaxHeight = 28f;
+    private const float FlapSpeed = 7.5f;
+    private const float FlapCost = 4f;
+    private const float Gravity = -12f;
+    private const float GlideFall = -0.8f;
+    private const float MaxHeight = 36f;
 
     public const float MaxStamina = 100f;
 
@@ -317,7 +317,7 @@ public sealed class Unicorn : MonoBehaviour
         else
         {
             targetSpeed = throttle * (grounded ? GroundSpeed : AirSpeed) * (WingBoost ? 1.35f : 1f);
-            response = grounded ? 10f : 3f;
+            response = grounded ? 10f : 4f;
         }
         var wanted = fwd * targetSpeed;
         if (dashT <= 0f) wanted += Quaternion.Euler(0, 90f, 0) * fwd * (strafe * (grounded ? GroundSpeed : AirSpeed) * 0.7f);
@@ -365,7 +365,7 @@ public sealed class Unicorn : MonoBehaviour
         }
         transform.position = pos;
 
-        stamina = Mathf.Min(MaxStamina, stamina + (Grounded ? 50f : 14f) * dt);
+        stamina = Mathf.Min(MaxStamina, stamina + (Grounded ? 50f : 40f) * dt);
         if (WingBoost)
         {
             stamina = MaxStamina;
