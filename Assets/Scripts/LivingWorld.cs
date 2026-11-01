@@ -236,8 +236,64 @@ public sealed class LivingWorld : MonoBehaviour
         }
     }
 
+    private sealed class Glitter
+    {
+        public Transform T;
+        public Vector3 Vel;
+        public float Life, MaxLife, Size, Twinkle;
+    }
+
+    private readonly List<Glitter> glitter = new List<Glitter>();
+    private Material[] glitterMats;
+
+    // Tiny coloured motes that hang in the air, twinkle and slowly fade: a mist of rainbow glitter.
+    private void EmitGlitter(Vector3 pos, Color tint)
+    {
+        if (glitter.Count > 500) return;
+        if (glitterMats == null)
+        {
+            glitterMats = new Material[12];
+            for (var i = 0; i < glitterMats.Length; i++) glitterMats[i] = Glow(Color.HSVToRGB(i / 12f, 0.5f, 1f), 1.6f);
+        }
+        var t = Prim.Make(PrimitiveType.Sphere, "Glitter", null, pos + Random.insideUnitSphere * 0.15f, Vector3.zero, Color.white);
+        // Mostly rainbow hues, with some of the butterfly's own colour mixed in.
+        var mat = Random.value < 0.3f ? CachedGlow(Color.Lerp(tint, Color.white, 0.3f), 1.6f) : glitterMats[Random.Range(0, glitterMats.Length)];
+        t.GetComponent<Renderer>().sharedMaterial = mat;
+        var life = Random.Range(0.9f, 1.8f);
+        glitter.Add(new Glitter
+        {
+            T = t,
+            Vel = Random.insideUnitSphere * 0.25f + Vector3.up * 0.12f,
+            Life = life,
+            MaxLife = life,
+            Size = Random.Range(0.035f, 0.085f),
+            Twinkle = Random.Range(0f, 6.3f),
+        });
+    }
+
+    private void UpdateGlitter(float dt)
+    {
+        for (var i = glitter.Count - 1; i >= 0; i--)
+        {
+            var g = glitter[i];
+            g.Life -= dt;
+            if (g.Life <= 0f)
+            {
+                Destroy(g.T.gameObject);
+                glitter.RemoveAt(i);
+                continue;
+            }
+            g.T.position += g.Vel * dt;
+            g.Vel *= Mathf.Exp(-1.2f * dt);
+            var fade = Mathf.Sin(Mathf.Clamp01(g.Life / g.MaxLife) * Mathf.PI * 0.5f);
+            var twinkle = 0.55f + 0.45f * Mathf.Sin(Time.time * 18f + g.Twinkle);
+            g.T.localScale = Vector3.one * (g.Size * fade * twinkle);
+        }
+    }
+
     private void Update()
     {
+        UpdateGlitter(Time.deltaTime);
         var t = Time.time;
         var dt = Time.deltaTime;
         var pos = target != null ? target.position : Vector3.zero;
@@ -261,10 +317,11 @@ public sealed class LivingWorld : MonoBehaviour
             b.Root.position = p;
             if (b.Vel.sqrMagnitude > 0.05f) b.Root.rotation = Quaternion.Slerp(b.Root.rotation, Quaternion.LookRotation(new Vector3(b.Vel.x, 0, b.Vel.z) + Vector3.forward * 0.001f), 4f * dt);
             var flap = Mathf.Sin(t * (b.Scare > 0f ? 26f : 14f) + b.Phase) * 55f;
-            // Faint glittering fairy dust trails behind each butterfly.
-            if (Effects.Instance != null && Random.value < dt * (b.Scare > 0f ? 10f : 2.5f))
+            var emit = dt * (b.Scare > 0f ? 40f : 14f);
+            while (emit > 0f)
             {
-                Effects.Instance.Burst(b.Root.position - b.Root.forward * 0.2f, Color.Lerp(b.Dust, Color.white, 0.5f), 1, 0.3f, 0.9f);
+                if (Random.value < emit) EmitGlitter(b.Root.position - b.Root.forward * 0.25f, b.Dust);
+                emit -= 1f;
             }
             b.WingL.localRotation = Quaternion.Euler(0, 0, -flap);
             b.WingR.localRotation = Quaternion.Euler(0, 0, flap);
