@@ -29,6 +29,12 @@ Dreamland runs on happy wishes. Every wish becomes a balloon, and a balloon is m
 - **The balloons:** normal balloons are unpopped wishes. Hearts are the kingdom's courage, gold and star balloons are rare wishes, storm balloons are wishes gone sour, and the crowned boss is a cranky wish nobody has made in a hundred years.
 - **Possible twist:** the boss holds the very first wish that made Dreamland, and the king made it because he wished for a friend.
 
+### The journey
+
+Each realm has its own castle, a jester-type launcher and a King. Save enough dreams to open the King's gate and beat his boss balloon to free the realm. Free every realm and the universe is saved.
+
+- **The End realm (final):** a Dream-Eater god (working title) holds the Unicorn Castle, Pip's home, captive in a void beyond the realms. Pip's herd is locked inside it. This is the final stage, in the spirit of Minecraft's End.
+
 ## Progress
 
 - [x] Batch 1: 3D world, castle, jester, cannon, flying unicorn with chase camera
