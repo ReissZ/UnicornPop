@@ -4,15 +4,17 @@ using UnityEngine;
 // lands to watch the jester and king celebrate, then gets a comically shocked face, and takes off again.
 public sealed partial class UnicornPopGame
 {
-    private const float TitleLoop = 28f;
-    private const float FlipStart = 4.5f, FlipEnd = 6.2f;
-    private const float PatrolEnd = 9f, LandEnd = 13.5f, FaceStart = 19f, FaceEnd = 25f;
-    private const float SurpriseAt = 20.2f;
+    private const float TitleLoop = 26f;
+    private const float FlipStart = 1.6f, FlipEnd = 3.3f;
+    private const float PatrolEnd = 3.4f, LandEnd = 7f;
+    private const float FaceStart = 7f, SurpriseAt = 7.4f, FaceEnd = 12.2f;
+    private const float KingEnd = 15.7f, JesterEnd = 19.2f, TakeoffStart = 19.2f;
     private static readonly Vector3 LandPos = new Vector3(1.5f, 0f, 40f);
 
     private float titleT, titleYaw;
     private int camPhase = -1;
     private bool flipBurst, surpriseCue, confettiCue1, confettiCue2;
+    private float shotT;
     private Vector3 jesterHome;
 
     private static Vector3 Patrol(float t)
@@ -40,6 +42,7 @@ public sealed partial class UnicornPopGame
         jester.localScale = Vector3.one;
         kingCheer = 0f;
         camPhase = -1;
+        AnimateCharacterFaces(0f);
     }
 
     private Vector3 TitlePosition(float t, out float targetYaw)
@@ -59,7 +62,7 @@ public sealed partial class UnicornPopGame
             targetYaw = 0f;
             return new Vector3(Mathf.Lerp(from.x, LandPos.x, e), from.y * (1f - s) * (1f - s), Mathf.Lerp(from.z, LandPos.z, e));
         }
-        if (t < 25f)
+        if (t < TakeoffStart)
         {
             targetYaw = 0f;
             var y = 0f;
@@ -68,7 +71,7 @@ public sealed partial class UnicornPopGame
             if (h > 0f && h < 0.5f) y = Mathf.Sin(h / 0.5f * Mathf.PI) * 0.7f;
             return LandPos + Vector3.up * y;
         }
-        var u = (t - 25f) / (TitleLoop - 25f);
+        var u = (t - TakeoffStart) / (TitleLoop - TakeoffStart);
         var start = Patrol(0f);
         var pos = new Vector3(Mathf.Lerp(LandPos.x, start.x, Ease(u)), Mathf.Lerp(0f, start.y, u) + Mathf.Sin(u * Mathf.PI) * 3f, Mathf.Lerp(LandPos.z, start.z, Ease(u)));
         targetYaw = Mathf.Atan2(start.x - LandPos.x, start.z - LandPos.z) * Mathf.Rad2Deg;
@@ -91,7 +94,7 @@ public sealed partial class UnicornPopGame
         titleYaw = Mathf.LerpAngle(titleYaw, targetYaw, 1f - Mathf.Exp(-5f * dt));
         if (dt == 0f) titleYaw = targetYaw;
         unicorn.CinPlace(pos, titleYaw, dt);
-        unicorn.CinTrail = (t < LandEnd - 1f) || t > 25.2f;
+        unicorn.CinTrail = (t < LandEnd - 1f) || t > TakeoffStart + 0.2f;
 
         // Whimsical loop-the-loop.
         unicorn.Flip = t > FlipStart && t < FlipEnd ? -360f * Ease((t - FlipStart) / (FlipEnd - FlipStart)) : 0f;
@@ -103,19 +106,19 @@ public sealed partial class UnicornPopGame
         }
 
         // Jester and king put on a show.
-        if (t > LandEnd - 1.5f && t < 24.5f)
+        if (t >= FaceEnd && t < JesterEnd)
         {
-            var hop = Mathf.Abs(Mathf.Sin((t - LandEnd) * 7f)) * 1.1f;
-            var squash = Mathf.Abs(Mathf.Cos((t - LandEnd) * 7f)) * 0.1f;
+            var hop = (t > KingEnd ? Mathf.Abs(Mathf.Sin((t - KingEnd) * 9f)) * 0.7f : 0f);
+            var squash = (t > KingEnd ? Mathf.Abs(Mathf.Cos((t - KingEnd) * 9f)) * 0.08f : 0f);
             jester.position = jesterHome + Vector3.up * hop;
             jester.localScale = new Vector3(1f + squash, 1f - squash, 1f + squash);
-            kingCheer = Mathf.Max(kingCheer, 0.3f);
-            if (!confettiCue1 && t > 14f)
+            if (t > KingEnd) kingCheer = Mathf.Max(kingCheer, 0.3f);
+            if (!confettiCue1 && t > FaceEnd + 0.2f)
             {
                 confettiCue1 = true;
                 ConfettiAtWall();
             }
-            if (!confettiCue2 && t > 16.5f)
+            if (!confettiCue2 && t > KingEnd + 0.2f)
             {
                 confettiCue2 = true;
                 ConfettiAtWall();
@@ -129,12 +132,12 @@ public sealed partial class UnicornPopGame
 
         // Shocked face: eyebrows fly up, a few quick wiggles, then she calms down.
         float surprise = 0f;
-        if (t >= SurpriseAt && t < 25f)
+        if (t >= SurpriseAt && t < FaceEnd)
         {
             var s = t - SurpriseAt;
             surprise = Mathf.Clamp01(s / 0.12f);
-            if (s > 1.2f && s < 3.6f) surprise = 0.8f + 0.2f * Mathf.Sin((s - 1.2f) * 16f);
-            if (s > 3.6f) surprise = Mathf.Clamp01(1f - (s - 3.6f) / 1.2f);
+            if (s > 1.0f && s < 3.0f) surprise = 0.8f + 0.2f * Mathf.Sin((s - 1.0f) * 16f);
+            if (s > 3.0f) surprise = Mathf.Clamp01(1f - (s - 3.0f) / 1.4f);
             if (!surpriseCue)
             {
                 surpriseCue = true;
@@ -144,6 +147,41 @@ public sealed partial class UnicornPopGame
             }
         }
         unicorn.Surprise = surprise;
+        AnimateCharacterFaces(t);
+    }
+
+    // King: a slow, subtle, scheming grimace. Jester: a goofy cackle with wobbly buck teeth.
+    private void AnimateCharacterFaces(float t)
+    {
+        var kingOn = t >= FaceEnd - 0.4f && t < JesterEnd;
+        var kg = kingOn ? Mathf.Clamp01((t - (FaceEnd - 0.4f)) / 0.8f) : 0f;
+        var tw = 0.5f + 0.5f * Mathf.Sin(Time.time * 3.2f);
+        kingMouth.localScale = Vector3.Lerp(new Vector3(0.12f, 0.02f, 0.06f), new Vector3(0.36f + 0.03f * tw, 0.055f, 0.08f), kg);
+        kingTeeth.localScale = new Vector3(0.3f * kg, 0.04f * kg, 0.03f * kg);
+        for (var i = 0; i < 2; i++)
+        {
+            var sd = i == 0 ? -1f : 1f;
+            // Brows slant down toward the nose, with a slow single raise.
+            var raise = Mathf.Max(0f, Mathf.Sin(Time.time * 1.3f)) * 0.03f * kg;
+            kingBrows[i].localPosition = new Vector3(sd * 0.2f, 2.79f + raise, 0.4f);
+            kingBrows[i].localRotation = Quaternion.Euler(0, 0, 90f + sd * 16f * kg);
+        }
+
+        var jOn = t >= KingEnd - 0.2f && t < JesterEnd;
+        var jg = jOn ? Mathf.Clamp01((t - (KingEnd - 0.2f)) / 0.25f) : 0f;
+        var cackle = jg * (0.5f + 0.5f * Mathf.Sin(Time.time * 26f));
+        jesterMouth.localScale = Vector3.Lerp(new Vector3(0.1f, 0.02f, 0.06f), new Vector3(0.52f, 0.1f + 0.14f * cackle, 0.09f), jg);
+        jesterMouth.localPosition = new Vector3(0, 1.86f - 0.03f * cackle * jg, 0.33f);
+        jesterTongue.localScale = new Vector3(0.22f, 0.07f, 0.05f) * jg;
+        jesterTeeth.localScale = new Vector3(0.17f * jg, 0.1f * jg, 0.03f * jg);
+        jesterTeeth.localPosition = new Vector3(0, 1.94f, 0.39f);
+        for (var i = 0; i < 2; i++)
+        {
+            var sd = i == 0 ? -1f : 1f;
+            jesterEyes[i].localScale = new Vector3(0.12f, 0.12f - 0.07f * jg, 0.12f);
+            jesterBrows[i].localPosition = new Vector3(sd * 0.18f, 2.36f + 0.05f * jg + 0.03f * cackle, 0.36f);
+            jesterBrows[i].localRotation = Quaternion.Euler(0, 0, 90f - sd * 22f * jg);
+        }
     }
 
     private void ConfettiAtWall()
@@ -159,29 +197,46 @@ public sealed partial class UnicornPopGame
     private void TitleCamera(float dt)
     {
         var t = titleT;
-        var phase = t >= FaceStart && t < FaceEnd ? 2 : (t >= LandEnd && t < FaceStart ? 1 : 0);
-        var snap = phase != camPhase && (phase == 2 || camPhase == 2 || camPhase == -1);
+        var phase = t >= JesterEnd ? 0 : t >= KingEnd ? 4 : t >= FaceEnd ? 3 : t >= FaceStart ? 2 : 0;
+        var changed = phase != camPhase;
+        if (changed) shotT = 0f;
+        shotT += dt;
+        var snap = changed && (phase >= 2 || camPhase >= 2 || camPhase == -1);
         camPhase = phase;
 
         var u = unicorn.transform;
         var fwd = unicorn.Forward;
         var right = Quaternion.Euler(0, 90f, 0) * fwd;
+        // Quick whip-zoom: each close-up starts a little far away and pushes in.
+        var push = Mathf.Lerp(1.9f, 1f, Ease(Mathf.Clamp01(shotT / 0.45f)));
         Vector3 want, look;
         float fov, rate;
         if (phase == 2)
         {
             var face = u.position + Quaternion.Euler(0, titleYaw, 0) * new Vector3(0, 1.85f, 1.1f);
-            want = face + fwd * 2.5f + right * 0.3f + Vector3.up * 0.15f;
+            want = face + fwd * 2.5f * push + right * 0.3f + Vector3.up * 0.15f;
             look = face + Vector3.up * 0.12f;
             fov = 40f;
             rate = 14f;
         }
-        else if (phase == 1)
+        else if (phase == 3)
         {
-            want = new Vector3(5f, 3.8f, 33f + (t - LandEnd) * 0.2f);
-            look = new Vector3(-1.5f, 9.6f, CastleZ - 4f);
-            fov = 56f;
-            rate = 1.6f;
+            var face = king.position + Vector3.up * 2.55f;
+            var toward = unicorn.transform.position - king.position;
+            toward.y = 0f;
+            toward.Normalize();
+            want = face + toward * 3.3f * push + Vector3.up * 0.1f;
+            look = face - Vector3.up * 0.1f;
+            fov = 38f;
+            rate = 14f;
+        }
+        else if (phase == 4)
+        {
+            var face = jesterHome + Vector3.up * 2.2f;
+            want = face + new Vector3(0.3f, 0.15f, -3.0f * push);
+            look = jesterHome + Vector3.up * 2.1f;
+            fov = 38f;
+            rate = 14f;
         }
         else
         {

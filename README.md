@@ -33,6 +33,6 @@ Flaps use stamina (blue bar); the dash cooldown is the yellow bar.
 - [x] Batch 10: level themes (sunset, night, candy clouds, aurora) with level banners
 - [x] Batch 11: dreamy procedural music and ambience
 - [x] Batch 12: game feel (screen shake, slow-mo, speed lines, hoofprints, pastel HUD)
-- [x] Title screen cinematic: patrol flight with a loop, landing to watch the jester and king, then a shocked-eyebrows close-up (starts the game at any time)
+- [x] Title screen cinematic: loop-the-loop flip and landing, shocked-eyebrows close-up, then quick zooms to the grinning king and the cackling jester (starts the game at any time)
 
 All models are built from Unity primitives in code, so there are no extra assets or packages. `Assets/Editor/SceneBuilder.cs` regenerates the scene (menu: Unicorn Pop > Create Main Scene).

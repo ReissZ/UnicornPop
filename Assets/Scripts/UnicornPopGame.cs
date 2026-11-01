@@ -39,6 +39,11 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     private Transform king;
     private Transform kingArmL, kingArmR;
     private float kingCheer, kingGrump;
+    private readonly Transform[] kingBrows = new Transform[2];
+    private Transform kingMouth, kingTeeth;
+    private readonly Transform[] jesterEyes = new Transform[2];
+    private readonly Transform[] jesterBrows = new Transform[2];
+    private Transform jesterMouth, jesterTongue, jesterTeeth;
     private Vector3 kingHome;
 
     private int score;
@@ -398,8 +403,16 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         Prim.Make(PrimitiveType.Sphere, "Nose", jester, new Vector3(0, 2.05f, 0.45f), Vector3.one * 0.18f, new Color(0.95f, 0.4f, 0.4f));
         foreach (var sx in new[] { -0.18f, 0.18f })
         {
-            Prim.Make(PrimitiveType.Sphere, "Eye", jester, new Vector3(sx, 2.2f, 0.38f), Vector3.one * 0.12f, Color.black);
+            var eye = Prim.Make(PrimitiveType.Sphere, "Eye", jester, new Vector3(sx, 2.2f, 0.38f), Vector3.one * 0.12f, Color.black);
+            jesterEyes[sx < 0 ? 0 : 1] = eye;
+            var brow = Prim.Make(PrimitiveType.Cylinder, "Brow", jester, new Vector3(sx, 2.36f, 0.36f), new Vector3(0.03f, 0.08f, 0.03f), new Color(0.35f, 0.2f, 0.4f), new Vector3(0, 0, 90f));
+            jesterBrows[sx < 0 ? 0 : 1] = brow;
+            Prim.Make(PrimitiveType.Sphere, "Cheek", jester, new Vector3(sx * 1.6f, 1.98f, 0.34f), new Vector3(0.14f, 0.1f, 0.06f), new Color(1f, 0.55f, 0.6f));
         }
+        // A wide goofy mouth with big buck teeth and a tongue; it stays small until the jester cackles.
+        jesterMouth = Prim.Make(PrimitiveType.Sphere, "Mouth", jester, new Vector3(0, 1.86f, 0.33f), new Vector3(0.1f, 0.02f, 0.06f), new Color(0.5f, 0.08f, 0.15f));
+        jesterTongue = Prim.Make(PrimitiveType.Sphere, "Tongue", jester, new Vector3(0, 1.8f, 0.37f), new Vector3(0.0f, 0.0f, 0.0f), new Color(1f, 0.5f, 0.6f));
+        jesterTeeth = Prim.Make(PrimitiveType.Cube, "Teeth", jester, new Vector3(0, 1.92f, 0.39f), Vector3.zero, Color.white);
         Prim.Make(PrimitiveType.Sphere, "Hand", jester, new Vector3(-0.65f, 1.2f, 0.1f), Vector3.one * 0.25f, skin);
         Prim.Make(PrimitiveType.Sphere, "Hand", jester, new Vector3(0.65f, 1.2f, 0.1f), Vector3.one * 0.25f, skin);
 
@@ -523,7 +536,11 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         foreach (var sx in new[] { -0.2f, 0.2f })
         {
             Prim.Make(PrimitiveType.Sphere, "Eye", king, new Vector3(sx, 2.65f, 0.4f), Vector3.one * 0.12f, Color.black);
+            kingBrows[sx < 0 ? 0 : 1] = Prim.Make(PrimitiveType.Cylinder, "Brow", king, new Vector3(sx, 2.79f, 0.4f), new Vector3(0.04f, 0.11f, 0.04f), new Color(0.78f, 0.74f, 0.86f), new Vector3(0, 0, 90f));
         }
+        // Subtle grimacing grin: a wide dark mouth in the beard with a row of teeth.
+        kingMouth = Prim.Make(PrimitiveType.Sphere, "Mouth", king, new Vector3(0, 2.3f, 0.43f), new Vector3(0.3f, 0.025f, 0.08f), new Color(0.35f, 0.1f, 0.15f));
+        kingTeeth = Prim.Make(PrimitiveType.Cube, "Teeth", king, new Vector3(0, 2.315f, 0.47f), Vector3.zero, Color.white);
         Prim.Make(PrimitiveType.Cylinder, "CrownBand", king, new Vector3(0, 3.05f, 0), new Vector3(0.9f, 0.14f, 0.9f), gold);
         for (var i = 0; i < 5; i++)
         {
