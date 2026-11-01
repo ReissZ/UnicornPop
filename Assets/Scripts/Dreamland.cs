@@ -3,7 +3,7 @@ using UnityEngine;
 
 // Dreamy backdrop: gradient sky dome, sun with rays, rainbow, shooting stars, far mountains,
 // floating islands, a sparkling pond, a winding path and glowing flowers.
-public sealed class Dreamland : MonoBehaviour
+public sealed partial class Dreamland : MonoBehaviour
 {
     public static readonly Color Horizon = new Color(0.96f, 0.80f, 0.86f);
 
@@ -48,6 +48,7 @@ public sealed class Dreamland : MonoBehaviour
         BuildPond(world);
         BuildFlowers(world);
         BuildIslands(world);
+        BuildThemes();
     }
 
     // ---------- Sky ----------
@@ -89,8 +90,10 @@ public sealed class Dreamland : MonoBehaviour
 
     private void BuildSky()
     {
-        SkyPiece("Dome", DomeMesh(300f), SkyMat(1000));
-        SkyPiece("Rainbow", RainbowMesh(new Vector3(-100f, -8f, 240f), 120f), SkyMat(1001));
+        domeMesh = DomeMesh(300f);
+        SkyPiece("Dome", domeMesh, SkyMat(1000));
+        rainbowMat = SkyMat(1001);
+        SkyPiece("Rainbow", RainbowMesh(new Vector3(-100f, -8f, 240f), 120f), rainbowMat);
 
         var sunPos = new Vector3(0.25f, 0.42f, 0.87f).normalized * 270f;
         SkyBall("SunHalo", sunPos, 90f, new Color(1f, 0.9f, 0.7f, 0.16f), 1002);
@@ -115,6 +118,7 @@ public sealed class Dreamland : MonoBehaviour
             ray.GetComponent<Renderer>().sharedMaterial = rayMat;
         }
         SkyBall("SunDisc", sunPos, 30f, new Color(1f, 0.97f, 0.8f, 1f), 1005);
+        GatherSun();
 
         var star = GameObject.CreatePrimitive(PrimitiveType.Cube);
         star.name = "ShootingStar";
@@ -358,6 +362,7 @@ public sealed class Dreamland : MonoBehaviour
         }
 
         UpdateShootingStar(Time.deltaTime);
+        UpdateTheme(Time.deltaTime);
     }
 
     private void UpdateShootingStar(float dt)

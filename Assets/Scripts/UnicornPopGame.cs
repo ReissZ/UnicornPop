@@ -33,6 +33,7 @@ public sealed class UnicornPopGame : MonoBehaviour
     private int level = 1;
     private float playTime;
     private float levelBanner;
+    private Dreamland dreamland;
     private Transform king;
     private Transform kingArmL, kingArmR;
     private float kingCheer, kingGrump;
@@ -97,7 +98,8 @@ public sealed class UnicornPopGame : MonoBehaviour
         BuildClouds(world);
         BuildCastle(world);
         BuildCannonAndJester(world);
-        new GameObject("Dreamland").AddComponent<Dreamland>().Build(world, cam);
+        dreamland = new GameObject("Dreamland").AddComponent<Dreamland>();
+        dreamland.Build(world, cam);
 
         unicorn = new GameObject("Unicorn").AddComponent<Unicorn>();
         unicorn.transform.SetParent(transform, false);
@@ -462,7 +464,8 @@ public sealed class UnicornPopGame : MonoBehaviour
         if (newLevel != level)
         {
             level = newLevel;
-            levelBanner = 2f;
+            levelBanner = 3f;
+            dreamland.SetTheme(level - 1);
             Sfx.Start();
             effects.Text(unicorn.transform.position + Vector3.up * 4f, "Level " + level + "!", new Color(1f, 0.9f, 0.4f), 40);
             kingCheer = 1.2f;
@@ -900,6 +903,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         if (levelBanner > 0f)
         {
             Shadowed(new Rect(0, Screen.height * 0.3f, Screen.width, 70 * k), "Level " + level + " - faster!", bigStyle, Mathf.RoundToInt(54 * k), new Color(1f, 0.9f, 0.4f));
+            Shadowed(new Rect(0, Screen.height * 0.3f + 62 * k, Screen.width, 40 * k), dreamland.ThemeName, midStyle, Mathf.RoundToInt(28 * k), Color.white);
         }
 
         // Score and combo, top centre.
