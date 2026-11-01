@@ -5,7 +5,7 @@ public sealed partial class UnicornPopGame
 {
     private const string StarsKey = Realm.StarsKey;
 
-    private readonly Realm realm = Realm.Current;
+    private Realm realm;
     private bool gateOpen;
     private bool bossDefeated;
     private bool realmCleared;

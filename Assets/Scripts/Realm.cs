@@ -112,7 +112,18 @@ public sealed class Realm
         },
     };
 
-    public static int Index = Mathf.Clamp(PlayerPrefs.GetInt(IndexKey, 0), 0, Mathf.Clamp(PlayerPrefs.GetInt(UnlockKey, 1), 1, All.Length) - 1);
+    private static int index = -1;
+
+    // Read lazily: PlayerPrefs can't be touched from a MonoBehaviour constructor or field initializer.
+    public static int Index
+    {
+        get
+        {
+            if (index < 0) index = Mathf.Clamp(PlayerPrefs.GetInt(IndexKey, 0), 0, Unlocked - 1);
+            return index;
+        }
+        set { index = value; }
+    }
     public static Realm Current => All[Mathf.Clamp(Index, 0, All.Length - 1)];
     public static bool HasNext => Index + 1 < All.Length;
     public static int Unlocked => Mathf.Clamp(PlayerPrefs.GetInt(UnlockKey, 1), 1, All.Length);

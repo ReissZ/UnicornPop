@@ -87,6 +87,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
 
     private void Awake()
     {
+        realm = Realm.Current;
         Application.targetFrameRate = 60;
         Random.InitState(12345);
         best = PlayerPrefs.GetInt(BestKey, 0);
