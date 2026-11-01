@@ -89,6 +89,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         effects = new GameObject("Effects").AddComponent<Effects>();
         effects.transform.SetParent(transform, false);
         gameObject.AddComponent<Sfx>();
+        gameObject.AddComponent<Music>();
         heartTex = MakeHeart();
         Balloon.Escaped += OnBalloonEscaped;
 
@@ -131,6 +132,8 @@ public sealed class UnicornPopGame : MonoBehaviour
         skipTitle = true;
         Balloon.RiseScale = 1f;
         Balloon.TimeScale = 1f;
+        Music.SetDuck(1f);
+        Music.SetTheme(0);
         cannon.Active = true;
         startFrame = Time.frameCount;
         Sfx.Start();
@@ -466,6 +469,7 @@ public sealed class UnicornPopGame : MonoBehaviour
             level = newLevel;
             levelBanner = 3f;
             dreamland.SetTheme(level - 1);
+            Music.SetTheme(level - 1);
             Sfx.Start();
             effects.Text(unicorn.transform.position + Vector3.up * 4f, "Level " + level + "!", new Color(1f, 0.9f, 0.4f), 40);
             kingCheer = 1.2f;
@@ -651,6 +655,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         boss.SetDrift(flat * 1.4f + Vector3.up * 0.7f);
         effects.Text(unicorn.transform.position + unicorn.Forward * 6f + Vector3.up * 4f, "BOSS BALLOON!", new Color(1f, 0.5f, 0.85f), 44);
         Sfx.Start();
+        Music.SetBoss(true);
         kingGrump = 0.9f;
     }
 
@@ -686,6 +691,7 @@ public sealed class UnicornPopGame : MonoBehaviour
             PowerUp.Spawn(transform, pos + new Vector3((i - 0.5f) * 5f, 0f, 0f), (PowerKind)Random.Range(0, 3));
         }
         boss = null;
+        Music.SetBoss(false);
         b.Pop();
     }
 
@@ -775,6 +781,7 @@ public sealed class UnicornPopGame : MonoBehaviour
         if (b.Kind == BalloonKind.Boss)
         {
             boss = null;
+            Music.SetBoss(false);
             LoseHeart(b.transform.position, "The boss got away!");
             LoseHeart(b.transform.position + Vector3.up * 2f, "Ouch!");
             return;
@@ -797,6 +804,8 @@ public sealed class UnicornPopGame : MonoBehaviour
         }
 
         gameOver = true;
+        Music.SetDuck(0.4f);
+        Music.SetBoss(false);
         starPower = rainbowPower = slowPower = boostPower = 0f;
         Balloon.TimeScale = 1f;
         cannon.Active = false;
