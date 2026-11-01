@@ -76,6 +76,7 @@ public sealed partial class UnicornPopGame
         cannon.StarChance = p > 0.25f ? 0.04f : 0f;
         cannon.StormChance = p > 0.45f ? 0.06f + 0.08f * p : 0f;
         cannon.SpeedyChance = p > 0.1f ? (0.05f + 0.05f * p) * realm.SpeedyMix : 0f;
+        cannon.RareChance = 0.05f + 0.03f * p;
         cannon.SplitterChance = p > 0.25f ? 0.06f * realm.SplitterMix : 0f;
         cannon.ArmoredChance = p > 0.35f ? (0.05f + 0.06f * p) * realm.ArmoredMix : 0f;
         Balloon.RiseScale = 1f + 0.3f * p;

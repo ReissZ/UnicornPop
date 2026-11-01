@@ -17,6 +17,13 @@ public sealed class Unicorn : MonoBehaviour
 
     public event System.Action ButtStruck;
     public bool Butting => buttT > 0f;
+    public bool ButtFrenzy;
+
+    public void Refill()
+    {
+        stamina = MaxStamina;
+        dashCd = 0f;
+    }
     public float ButtReady01 => 1f - Mathf.Clamp01(buttCd / (ButtCooldown * Upgrades.ButtCooldownScale));
     private float ButtLunge => buttT > 0f ? Mathf.Sin((1f - buttT / ButtTime) * Mathf.PI) : 0f;
     private const float FlapSpeed = 7.5f;
@@ -349,7 +356,7 @@ public sealed class Unicorn : MonoBehaviour
         {
             buttT = ButtTime;
             buttStruck = false;
-            buttCd = ButtCooldown * Upgrades.ButtCooldownScale;
+            buttCd = ButtFrenzy ? 0.15f : ButtCooldown * Upgrades.ButtCooldownScale;
             hv += fwd * 10f;
             Sfx.Dash();
         }

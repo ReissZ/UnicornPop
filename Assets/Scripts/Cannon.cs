@@ -19,7 +19,7 @@ public sealed class Cannon : MonoBehaviour
     public float Tempo = 1f;
     public float GoldenChance = 0.12f;
     public float DoubleChance;
-    public float RainbowChance, HeartChance, StarChance, StormChance, ArmoredChance, SpeedyChance, SplitterChance;
+    public float RainbowChance, HeartChance, StarChance, StormChance, ArmoredChance, SpeedyChance, SplitterChance, RareChance;
 
     private Transform world;
     private Transform jester;
@@ -82,6 +82,7 @@ public sealed class Cannon : MonoBehaviour
         if ((r -= ArmoredChance) < 0f) return BalloonKind.Armored;
         if ((r -= SpeedyChance) < 0f) return BalloonKind.Speedy;
         if ((r -= SplitterChance) < 0f) return BalloonKind.Splitter;
+        if ((r -= RareChance) < 0f) return (BalloonKind)((int)BalloonKind.Frost + Random.Range(0, 4));
         return BalloonKind.Normal;
     }
 

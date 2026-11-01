@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum BalloonKind { Normal, Golden, Rainbow, Heart, Star, Storm, Boss, Armored, Speedy, Splitter }
+public enum BalloonKind { Normal, Golden, Rainbow, Heart, Star, Storm, Boss, Armored, Speedy, Splitter, Frost, Bolt, Shield, Thunder }
 
 // A balloon launched from the cannon. Air drag turns the throw into a slow float that eventually leaves the sky.
 public sealed class Balloon : MonoBehaviour
@@ -66,6 +66,10 @@ public sealed class Balloon : MonoBehaviour
             case BalloonKind.Armored: return new Color(0.62f, 0.7f, 0.85f);
             case BalloonKind.Speedy: return new Color(1f, 0.6f, 0.2f);
             case BalloonKind.Splitter: return new Color(0.4f, 0.9f, 0.65f);
+            case BalloonKind.Frost: return new Color(0.6f, 0.88f, 1f);
+            case BalloonKind.Bolt: return new Color(1f, 0.93f, 0.25f);
+            case BalloonKind.Shield: return new Color(0.5f, 1f, 0.7f);
+            case BalloonKind.Thunder: return new Color(0.72f, 0.45f, 1f);
             default: return RandomColor();
         }
     }
@@ -152,6 +156,37 @@ public sealed class Balloon : MonoBehaviour
                 Prim.Make(PrimitiveType.Cube, "Seam", root, new Vector3(0, 0f, -0.2f), new Vector3(0.1f, 1.5f, 0.5f), white);
                 Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.7f, 0.3f, -0.45f), new Vector3(0.22f, 0.32f, 0.14f), white);
                 knotY = -0.95f;
+                break;
+            case BalloonKind.Frost:
+                Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.4f, 1.7f, 1.4f), color);
+                for (var i = 0; i < 6; i++)
+                {
+                    var a = i * 60f;
+                    Prim.Cone("Crystal", root, Quaternion.Euler(0, 0, -a) * Vector3.up * 0.95f, new Vector3(0.35f, 0.9f, 0.35f), Color.white, new Vector3(0, 0, -a));
+                }
+                Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.35f, 0.4f, -0.55f), new Vector3(0.25f, 0.4f, 0.18f), white);
+                knotY = -1.0f;
+                break;
+            case BalloonKind.Bolt:
+                Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.3f, 1.6f, 1.3f), color);
+                Prim.Cone("BoltTop", root, new Vector3(0.1f, 0.35f, -0.62f), new Vector3(0.55f, 0.9f, 0.12f), new Color(1f, 0.55f, 0.1f), new Vector3(0, 0, 15f));
+                Prim.Cone("BoltBottom", root, new Vector3(-0.1f, -0.3f, -0.62f), new Vector3(0.55f, 0.9f, 0.12f), new Color(1f, 0.55f, 0.1f), new Vector3(180, 0, 15f));
+                Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.4f, 0.45f, -0.5f), new Vector3(0.22f, 0.35f, 0.15f), white);
+                knotY = -0.95f;
+                break;
+            case BalloonKind.Shield:
+                Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.5f, 1.8f, 1.5f), color);
+                Prim.Make(PrimitiveType.Cylinder, "Ring", root, new Vector3(0, 0, 0), new Vector3(1.9f, 0.08f, 1.9f), new Color(1f, 0.9f, 0.4f), new Vector3(70f, 0, 0));
+                Prim.Make(PrimitiveType.Cylinder, "Ring", root, new Vector3(0, 0, 0), new Vector3(1.9f, 0.08f, 1.9f), new Color(1f, 0.9f, 0.4f), new Vector3(70f, 90f, 0));
+                Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.35f, 0.45f, -0.55f), new Vector3(0.25f, 0.4f, 0.18f), white);
+                knotY = -1.05f;
+                break;
+            case BalloonKind.Thunder:
+                Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.5f, 1.8f, 1.5f), color);
+                Prim.Cone("Horn", root, new Vector3(0, 1.3f, 0), new Vector3(0.4f, 1.3f, 0.4f), new Color(1f, 0.95f, 0.7f));
+                Prim.Make(PrimitiveType.Sphere, "Spark", root, new Vector3(0, 0.1f, -0.7f), new Vector3(0.5f, 0.5f, 0.2f), new Color(1f, 0.95f, 0.5f));
+                Prim.Make(PrimitiveType.Sphere, "Shine", root, new Vector3(-0.4f, 0.45f, -0.55f), new Vector3(0.25f, 0.4f, 0.18f), white);
+                knotY = -1.1f;
                 break;
             case BalloonKind.Storm:
                 Prim.Make(PrimitiveType.Sphere, "Body", root, Vector3.zero, new Vector3(1.7f, 1.9f, 1.7f), color);

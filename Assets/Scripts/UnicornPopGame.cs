@@ -50,7 +50,9 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     private int best;
     private bool newRecord;
     private int hearts = StartHearts;
-    private float starPower;
+    private float starPower, thunderPower;
+    private bool shielded;
+    private const float ThunderSeconds = 8f;
     private float rainbowPower, slowPower, boostPower;
     private float nextPowerUp = 10f;
     private Balloon boss;
@@ -633,6 +635,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     {
         var dt = Time.deltaTime;
         rainbowPower = Mathf.Max(0f, rainbowPower - dt);
+        thunderPower = Mathf.Max(0f, thunderPower - dt);
+        unicorn.ButtFrenzy = thunderPower > 0f;
         slowPower = Mathf.Max(0f, slowPower - dt);
         boostPower = Mathf.Max(0f, boostPower - dt);
         unicorn.RainbowTrail = rainbowPower > 0f;
@@ -768,8 +772,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     {
         if (gameOver || onTitle) return;
         var tip = unicorn.HornTip.position;
-        var radius = Upgrades.ButtRadius;
-        var dmg = Upgrades.ButtDamage;
+        var radius = Upgrades.ButtRadius * (thunderPower > 0f ? 1.5f : 1f);
+        var dmg = Upgrades.ButtDamage + (thunderPower > 0f ? 1 : 0);
         var gold = new Color(1f, 0.9f, 0.5f);
         effects.Burst(tip, Color.white, 26, 9f, 0.5f);
         effects.Burst(tip, gold, 20, 6f, 0.6f);
@@ -887,6 +891,35 @@ public sealed partial class UnicornPopGame : MonoBehaviour
                 textColor = new Color(1f, 0.4f, 0.55f);
                 effects.Burst(pos, new Color(1f, 0.45f, 0.6f), 26, 7f);
                 break;
+            case BalloonKind.Frost:
+                points = 3 * combo;
+                label = "FROST! Time slows";
+                textColor = new Color(0.65f, 0.9f, 1f);
+                slowPower = SlowPowerSeconds;
+                effects.Burst(pos, Color.white, 30, 10f);
+                break;
+            case BalloonKind.Bolt:
+                points = 3 * combo;
+                label = "BOLT! Wings recharged";
+                textColor = new Color(1f, 0.93f, 0.3f);
+                boostPower = BoostPowerSeconds;
+                unicorn.Refill();
+                effects.Burst(pos, new Color(1f, 0.9f, 0.2f), 30, 11f);
+                break;
+            case BalloonKind.Shield:
+                points = 3 * combo;
+                label = "SHIELD! Blocks one hit";
+                textColor = new Color(0.55f, 1f, 0.75f);
+                shielded = true;
+                effects.Burst(pos, new Color(0.5f, 1f, 0.7f), 30, 9f);
+                break;
+            case BalloonKind.Thunder:
+                points = 3 * combo;
+                label = "THUNDER HORN!";
+                textColor = new Color(0.8f, 0.55f, 1f);
+                thunderPower = ThunderSeconds;
+                effects.Burst(pos, new Color(0.75f, 0.5f, 1f), 30, 10f);
+                break;
             case BalloonKind.Star:
                 points = 2 * combo;
                 label = "STAR POWER!";
@@ -930,6 +963,14 @@ public sealed partial class UnicornPopGame : MonoBehaviour
     private void LoseHeart(Vector3 pos, string text)
     {
         if (gameOver) return;
+        if (shielded)
+        {
+            shielded = false;
+            effects.Burst(pos, new Color(0.5f, 1f, 0.7f), 24, 8f);
+            effects.Text(pos + Vector3.up * 2f, "Shield blocked it!", new Color(0.55f, 1f, 0.75f), 30);
+            Sfx.Golden();
+            return;
+        }
         hearts--;
         GameFeel.Shake(0.7f);
         effects.Text(pos, text, new Color(1f, 0.4f, 0.4f), 26);
@@ -944,7 +985,9 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         Upgrades.Bank(DreamSaver.Saved - resumeBase);
         Music.SetDuck(0.4f);
         Music.SetBoss(false);
-        starPower = rainbowPower = slowPower = boostPower = 0f;
+        starPower = rainbowPower = slowPower = boostPower = thunderPower = 0f;
+        shielded = false;
+        unicorn.ButtFrenzy = false;
         Balloon.TimeScale = 1f;
         cannon.Active = false;
         if (score > best)
@@ -1093,6 +1136,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         }
 
         var barY = 104 * k;
+        DrawPower("Thunder horn", thunderPower, ThunderSeconds, new Color(0.75f, 0.5f, 1f), ref barY, k);
+        if (shielded) DrawPower("Shield", 1f, 1f, new Color(0.5f, 1f, 0.7f), ref barY, k);
         DrawPower("Star power", starPower, StarPowerSeconds, new Color(0.55f, 0.95f, 1f), ref barY, k);
         DrawPower("Rainbow trail", rainbowPower, RainbowPowerSeconds, new Color(1f, 0.55f, 0.85f), ref barY, k);
         DrawPower("Slow motion", slowPower, SlowPowerSeconds, new Color(0.45f, 0.7f, 1f), ref barY, k);
