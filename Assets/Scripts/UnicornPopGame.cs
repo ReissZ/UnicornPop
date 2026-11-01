@@ -421,6 +421,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         Prim.Cone("HatR", jester, new Vector3(0.38f, 2.75f, 0), new Vector3(0.45f, 0.95f, 0.45f), gold, new Vector3(0, 0, -35));
         Prim.Make(PrimitiveType.Sphere, "BellL", jester, new Vector3(-0.72f, 3.15f, 0), Vector3.one * 0.2f, gold);
         Prim.Make(PrimitiveType.Sphere, "BellR", jester, new Vector3(0.72f, 3.15f, 0), Vector3.one * 0.2f, purple);
+        DetailJester(skin, purple, gold);
     }
 
     // ---------- Per frame ----------
@@ -539,8 +540,8 @@ public sealed partial class UnicornPopGame : MonoBehaviour
             kingBrows[sx < 0 ? 0 : 1] = Prim.Make(PrimitiveType.Cylinder, "Brow", king, new Vector3(sx, 2.79f, 0.4f), new Vector3(0.04f, 0.11f, 0.04f), new Color(0.78f, 0.74f, 0.86f), new Vector3(0, 0, 90f));
         }
         // Subtle grimacing grin: a wide dark mouth in the beard with a row of teeth.
-        kingMouth = Prim.Make(PrimitiveType.Sphere, "Mouth", king, new Vector3(0, 2.3f, 0.43f), new Vector3(0.3f, 0.025f, 0.08f), new Color(0.35f, 0.1f, 0.15f));
-        kingTeeth = Prim.Make(PrimitiveType.Cube, "Teeth", king, new Vector3(0, 2.315f, 0.47f), Vector3.zero, Color.white);
+        kingMouth = Prim.Make(PrimitiveType.Sphere, "Mouth", king, new Vector3(0, 2.3f, 0.5f), new Vector3(0.3f, 0.025f, 0.08f), new Color(0.35f, 0.1f, 0.15f));
+        kingTeeth = Prim.Make(PrimitiveType.Cube, "Teeth", king, new Vector3(0, 2.315f, 0.52f), Vector3.zero, Color.white);
         Prim.Make(PrimitiveType.Cylinder, "CrownBand", king, new Vector3(0, 3.05f, 0), new Vector3(0.9f, 0.14f, 0.9f), gold);
         for (var i = 0; i < 5; i++)
         {
@@ -558,6 +559,7 @@ public sealed partial class UnicornPopGame : MonoBehaviour
         kingArmR.localPosition = new Vector3(0.75f, 1.8f, 0);
         Prim.Make(PrimitiveType.Capsule, "Sleeve", kingArmR, new Vector3(0, -0.5f, 0), new Vector3(0.35f, 0.5f, 0.35f), robe);
         Prim.Make(PrimitiveType.Sphere, "Hand", kingArmR, new Vector3(0, -1.05f, 0), Vector3.one * 0.3f, skin);
+        DetailKing(skin, robe, fur, gold);
     }
 
     // The king watches the unicorn, cheers on pops and stomps when a balloon escapes.
